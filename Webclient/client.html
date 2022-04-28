@@ -8,23 +8,29 @@
 </style>
 <h2>WebSocket Test</h2>
 <textarea cols=60 rows=6></textarea>
-<button>send</button>
+<button id=send-editor>Send Editor Data</button>
+<button id=send-large-data>Send Large Data</button>
 <div id=output></div>
 <script>
     // http://www.websocket.org/echo.html
 
-    var button = document.querySelector("button"),
+    var btnSendEditor = document.querySelector("#send-editor"),
+        btnSendLargeData = document.querySelector("#send-large-data"),
         output = document.querySelector("#output"),
         textarea = document.querySelector("textarea"),
         // wsUri = "ws://echo.websocket.org/",
         wsUri = "ws://127.0.0.1/",
         websocket = new WebSocket(wsUri);
 
-    button.addEventListener("click", onClickButton);
+        btnSendEditor.addEventListener("click", onClickButton);
+        btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
+
 
     websocket.onopen = function (e) {
         writeToScreen("CONNECTED");
-        doSend("*".repeat(129));
+        doSend("connection test");
+        // websocket.send("*".repeat(129));
+        // websocket.send("*".repeat(65535));
     };
 
     websocket.onclose = function (e) {
@@ -40,7 +46,7 @@
     };
 
     function doSend(message) {
-        writeToScreen("SENT: " + message);
+        writeToScreen("SENDING: " + message);
         websocket.send(message);
     }
 
@@ -49,6 +55,14 @@
     }
 
     function onClickButton() {
+        sendEditorContent();
+    }
+
+    function btnSendLargeData_onClick() {
+        websocket.send("_".repeat(65533) + "UUUUU");  // 65538
+    }
+
+    function sendEditorContent() {
         var text = textarea.value;
 
         text && doSend(text);

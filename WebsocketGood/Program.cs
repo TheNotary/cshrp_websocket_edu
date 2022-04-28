@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 static void Main(string[] args)
 {
 
-    Console.WriteLine("Hello, World!");
+    // Console.WriteLine(new string('*', 65535) + "hello");
 
     TcpListener server = new TcpListener(IPAddress.Parse("0.0.0.0"), 80);
 
@@ -18,17 +18,14 @@ static void Main(string[] args)
 
 
     TcpClient client = server.AcceptTcpClient();
-    Console.WriteLine("A client connected.");
+    Console.WriteLine("A client connected.\n");
 
     NetworkStream stream = client.GetStream();
 
     //enter to an infinite cycle to be able to handle every change in stream
     while (true)
     {
-        while (!stream.DataAvailable);
-
-        // Byte[] bytes = new Byte[client.Available];
-        // stream.Read(bytes, 0, bytes.Length);
+        while (!stream.DataAvailable) ;
 
         WaitForMoreClientData(client, stream);
     }
@@ -38,19 +35,25 @@ static void Main(string[] args)
 
 static void WaitForMoreClientData(TcpClient client, NetworkStream stream)
 {
-    while (client.Available < 3); // wait for enough bytes to be available
+    // 1.
+    // wait for the first 3 bytes to be available.  Websocket messages consist of a three byte header detailing 
+    // the shape of the incoming websocket frame
+    while (client.Available < 3); 
 
-    // Get the client's data now that they've at least gotten to the "GET" part
-    Byte[] bytes = new Byte[client.Available];
+    // 2. 
+    // Get the client's data now that they've at least gotten to the "GET" part or the frame header
+    Byte[] bytes = new Byte[client.Available];      // change this to 3 bytes exactly
     stream.Read(bytes, 0, bytes.Length);
     String data = Encoding.UTF8.GetString(bytes);
 
+    Console.WriteLine("New Bytes ready for processing from client: " + bytes.Length);
+
     if ( HandleHandshake(stream, data) ) return;
 
+    // Handle ordinary communication
     HandleMessage(stream, bytes);
 
-    // Handle ordinary communication
-    Console.WriteLine("Client: " + data);
+    // Console.WriteLine("Client: " + data);
 }
 
 static void HandleMessage(NetworkStream stream, Byte[] bytes)
@@ -62,53 +65,57 @@ static void HandleMessage(NetworkStream stream, Byte[] bytes)
 
 
     // determine the message length
-    int[] result = determineMessageLength(bytes);
-    int msglen = result[0];
-    int offset = result[1];
-
+    object[] result = determineMessageLength(bytes);
+    ulong msglen = (ulong) result[0];
+    int offset = (int) result[1];
 
     if (msglen == 0)
         Console.WriteLine("msglen == 0");
     else if (mask)
     {
-        Byte[] decoded = decodeMessage(bytes, offset);
+        Byte[] decoded = decodeMessage(bytes, offset);    // only has up to 65521 properly decoded, the rest are empty bytes...
         string text = Encoding.UTF8.GetString(decoded);
-        Console.WriteLine("{0}", text);
+        Console.WriteLine("Client: {0}", text);
     }
-    else
+    else { 
         Console.WriteLine("mask bit not set");
-    
+        string text = Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+        Console.WriteLine("Client: {0}", text);
+    }
+
 }
 
-static int[] determineMessageLength(Byte[] bytes)
+static object[] determineMessageLength(Byte[] bytes)
 {
     int msglen = bytes[1] & 0b01111111;
     int offset = 2;
+    ulong msglen64 = (ulong) msglen;
 
     if (msglen == 126)// 126 signifies an extended payload size of 16bits
     {
-        byte bb = 0x00;
-
-        // was ToUInt16(bytes, offset) but the result is incorrect
-        int msglen16 = BitConverter.ToUInt16(new byte[] { bytes[3], bytes[2] }, 0);
-        uint msglen32 = BitConverter.ToUInt32(new byte[] { bytes[3], bytes[2], 0x0, 0x0 });
+        // We could use the ToUInt16, but it's less supported across frameworks than just using longs which are pretty big
+        msglen64 = BitConverter.ToUInt16(new byte[] { bytes[3], bytes[2] });
         offset = 4;
     } 
     if (msglen == 127)
     {
+        msglen64 = BitConverter.ToUInt64(new byte[] { bytes[9], bytes[8], bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2] });
+        offset = 10;
         Console.WriteLine("TODO: msglen == 127, needs qword to store msglen");
         // i don't really know the byte order, please edit this
         // msglen = BitConverter.ToUInt64(new byte[] { data[5], data[4], data[3], data[2], data[9], data[8], data[7], data[6] }, 0);
         // offset = 10;
     }
 
-    return new int[]{ 1, offset };
+    
+
+    return new object[]{ msglen64, offset };
 }
 
 
 static byte[] decodeMessage(Byte[] bytes, int offset)
 {
-    Byte[] decoded = new Byte[bytes.Length];
+    Byte[] decoded = new Byte[bytes.Length];  // TODO, shouldn't this be bytes - offset actually?
 
     // read mask, has an offset of 2 or 4 at this point depending on... something to do with ... chance?
     byte[] mask = new byte[4] { bytes[offset], 

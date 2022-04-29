@@ -8,8 +8,12 @@
 </style>
 <h2>WebSocket Test</h2>
 <textarea cols=60 rows=6></textarea>
+<div>Status: 
+    <span id=connection-status>DISCONNECTED</span>
+</div>
 <button id=send-editor>Send Editor Data</button>
 <button id=send-large-data>Send Large Data</button>
+<button id=close-connection>Close Connection</button>
 <div id=output></div>
 <script>
     // http://www.websocket.org/echo.html
@@ -18,23 +22,27 @@
         btnSendLargeData = document.querySelector("#send-large-data"),
         output = document.querySelector("#output"),
         textarea = document.querySelector("textarea"),
-        // wsUri = "ws://echo.websocket.org/",
+        connectionStatus = document.querySelector("#connection-status"),
         wsUri = "ws://127.0.0.1/",
         websocket = new WebSocket(wsUri);
 
-        btnSendEditor.addEventListener("click", onClickButton);
-        btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
+    btnSendEditor.addEventListener("click", onClickButton);
+    btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
 
 
     websocket.onopen = function (e) {
-        writeToScreen("CONNECTED");
+        connectionStatus.innerHTML = "CONNECTED"
         doSend("connection test");
         // websocket.send("*".repeat(129));
         // websocket.send("*".repeat(65535));
     };
 
     websocket.onclose = function (e) {
-        writeToScreen("DISCONNECTED");
+        connectionStatus.innerHTML = "DISCONNECTED"
+        writeToScreen("<span>RESPONSE: " + e + "</span>");
+        window.e = e;
+
+        // writeToScreen("DISCONNECTED");
     };
 
     websocket.onmessage = function (e) {
@@ -42,7 +50,7 @@
     };
 
     websocket.onerror = function (e) {
-        writeToScreen("<span class=error>ERROR:</span> " + e.data);
+        writeToScreen("<span class=error>ERROR:</span> " + e);
     };
 
     function doSend(message) {

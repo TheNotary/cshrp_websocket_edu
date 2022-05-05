@@ -29,57 +29,62 @@ namespace WebsocketEdu
             {
                 if (threads.Count < threadPoolSize)
                 {
-                    Thread t = new Thread(new ParameterizedThreadStart(HandleNewClient));
+                    Thread t = new Thread(new ParameterizedThreadStart(HandleNewClientConnection));
                     t.Start(server);
                     threads.AddLast(t);
                 }
             }
-
         }
 
-        static void HandleNewClient(object server)
+        public static void HandleNewClientConnection(object? server)
         {
+            if (server == null)
+                throw new ArgumentNullException(nameof(server));
+
             // This could be it's own thread while thread pool !full
-            TcpClient client = ((TcpListener) server).AcceptTcpClient();
+            TcpClient tcpClient = ((TcpListener) server).AcceptTcpClient();
             Console.WriteLine("A client connected.\n");
-            NetworkStream stream = client.GetStream();
+            NetworkStream networkStream = tcpClient.GetStream();
 
-            while (client.Connected)
+
+
+            while (!tcpClient.Connected) ;
+            while (tcpClient.Connected)
             {
-                while (!stream.DataAvailable) ;
+                while (!networkStream.DataAvailable) ; // block here till we have data
 
-                WaitForMoreClientData(client, stream);
+                HandleClientCommunication(tcpClient, networkStream);
             }
+            tcpClient.Close();
         }
 
 
-        static void WaitForMoreClientData(TcpClient client, NetworkStream stream)
+        static void HandleClientCommunication(TcpClient tcpClient, NetworkStream networkStream)
         {
             // 1.
             // wait for the first 3 bytes to be available.  Websocket messages consist of a three byte header detailing 
-            // the shape of the incoming websocket frame
-            while (client.Available < 3) ;
+            // the shape of the incoming websocket frame...
+            while (tcpClient.Available < 3) ;
 
             // 2. 
             // Get the client's data now that they've at least gotten to the "GET" part or the frame header
             Byte[] bytes = new Byte[3];
-            stream.Read(bytes, 0, bytes.Length);
+            networkStream.Read(bytes, 0, bytes.Length);
             String data = Encoding.UTF8.GetString(bytes);
 
-            Console.WriteLine("New Bytes ready for processing from client: " + client.Available);
+            Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
 
-            if (HandleHandshake(stream, data)) return;
+            if (HandleHandshake(networkStream, data)) return;
 
             // Handle ordinary communication
-            HandleMessage(stream, bytes, client);
+            HandleMessage(networkStream, bytes, tcpClient);
         }
 
         static void HandleMessage(NetworkStream stream, Byte[] bytes, TcpClient client)
         {
-            bool fin = (bytes[0] & 0b10000000) != 0,
-                 mask = (bytes[1] & 0b10000000) != 0; // must be true, "All messages from the client to the server have this bit set"
-
-            int opcode = bytes[0] & 0b00001111; // expecting 0x0001, indicating a text message
+            bool fin  = (bytes[0] & 0b10000000) != 0,
+                 mask = (bytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
+            int opcode = bytes[0] & 0b00001111;        // expecting 0x0001, indicating a text message
 
 
             // determine the message length
@@ -93,11 +98,8 @@ namespace WebsocketEdu
             {
                 ulong bytesNeeded = msglen - (ulong)offset - (ulong)bytes.Length;
 
-
                 Console.WriteLine("We don't have enough of the message!");
-
             }
-
 
 
             if (msglen == 0)
@@ -105,7 +107,6 @@ namespace WebsocketEdu
             else if (mask)
             {
                 Byte[] decoded = decodeMessage(bytes, offset);    // only has up to 65521 properly decoded, the rest are empty bytes...
-
 
                 string text = Encoding.UTF8.GetString(decoded);
                 Console.WriteLine("Client: {0}", text);
@@ -115,7 +116,6 @@ namespace WebsocketEdu
                 string text = Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
                 Console.WriteLine("Client: {0}", text);
             }
-
 
         }
 
@@ -189,6 +189,7 @@ namespace WebsocketEdu
                 + "Sec-WebSocket-Accept: " + webSocketHeader + eol
                 + eol);
             stream.Write(response, 0, response.Length);
+            Console.WriteLine("Response to handshake written to stream");
         }
 
         // This function Read stream until you get to /r/n/r/n meaning the end of their opening HTTP upgrade request

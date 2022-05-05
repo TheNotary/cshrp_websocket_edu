@@ -86,7 +86,6 @@ namespace WebsocketEdu
                  mask = (bytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
             int opcode = bytes[0] & 0b00001111;        // expecting 0x0001, indicating a text message
 
-
             // determine the message length
             object[] result = determineMessageLength(bytes);
             ulong msglen = (ulong)result[0];

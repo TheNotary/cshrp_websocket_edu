@@ -7,7 +7,6 @@ using System.Net;
 using System.Threading;
 using System;
 using Xunit.Abstractions;
-using ExtensionMethods;
 
 namespace WebsocketEduTest
 {
@@ -21,7 +20,7 @@ namespace WebsocketEduTest
         }
 
         [Fact]
-        public void ItCanReadHttpUpgradeRequestsAndGetTheWebsocketHeader()
+        public void ItReadsHttpUpgradeRequestsAndGetsTheWebsocketHeader()
         {
             // Given
             string expectedWebsocketHeader = "websocketblah";
@@ -34,6 +33,12 @@ namespace WebsocketEduTest
 
             // Then
             Assert.Equal(expectedWebsocketHeader, websocketHeader);
+        }
+
+        [Fact]
+        public void ItRespondsCorrectlyToAWHandshake()
+        {
+
         }
 
         [Fact]
@@ -54,21 +59,16 @@ namespace WebsocketEduTest
             server.Start();
 
             Thread t = new Thread(new ParameterizedThreadStart(ListenToClientAndLogData));
-
             t.Start(server);
 
             TcpClient client = new TcpClient("127.0.0.1", 8881);
 
             Socket socket = client.Client;
-
             socket.Send(new byte[] { 0b00000001 });
             socket.Send(new byte[] { 0b00000010 });
             socket.Send(new byte[] { 0b00000011 });
             socket.Send(new byte[] { 0b11111111 }); // this byte tells the client to close down
-
-            client.Client.Disconnect(false);
             client.Client.Close();
-            //client.Close();
 
             t.Join();
 
@@ -95,29 +95,32 @@ namespace WebsocketEduTest
         }
 
         [Fact]
-        public void ICaneDoThisWithMemoryStream()
+        public void ItCanUseFeedableMemoryStreams()
         {
-            MemoryStream memoryStream = new MemoryStream(256);
-            Thread thread = new Thread(new ParameterizedThreadStart(ListenToMemoryStreamAndLogData));
+            FeedableMemoryStream fms = new FeedableMemoryStream();
 
-            thread.Start(memoryStream);
-            memoryStream.PutByte(0, 1);
-            memoryStream.PutByte(1, 2);
-            memoryStream.PutByte(2, 3);
-            memoryStream.PutByte(3, 255);
-            thread.Join();
+            Thread t = new Thread(new ParameterizedThreadStart(ListenToFeedableMemoryStream));
+            t.Start(fms);
+
+
+            fms.PutByte(1);
+            fms.PutByte(2);
+            fms.PutByte(3);
+            fms.PutByte(255);
+
+            t.Join();
         }
 
-        private void ListenToMemoryStreamAndLogData(object? memStream)
+        private void ListenToFeedableMemoryStream(object? strm)
         {
-            if (memStream == null) throw new ArgumentNullException(nameof(memStream));
-            Stream memoryStream = (Stream) memStream;
+            if (strm == null) throw new ArgumentNullException(nameof(strm));
+            Stream stream = (Stream)strm;
 
             while (true)
             {
-                if (memoryStream.Position < memoryStream.Length)
+                if (stream.Position < stream.Length)
                 {
-                    int myByte = memoryStream.ReadByte();
+                    int myByte = stream.ReadByte();
                     if (myByte == 255) break; // A 255 byte can signal the end of the stream
                     output.WriteLine("Data Recieved: " + myByte);
                 }

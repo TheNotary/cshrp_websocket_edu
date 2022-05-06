@@ -46,8 +46,10 @@ namespace WebsocketEduTest
         {
             string data = "i don't start with the word GET";
             Stream stream = CreateStreamWithTestString(data);
+            byte[] headerBytes = new byte[2];
+            stream.Read(headerBytes, 0, 2);
 
-            bool result = WebsocketExample.HandleHandshake(stream, data);
+            bool result = WebsocketExample.HandleHandshake(stream, headerBytes);
 
             Assert.False(result);
         }

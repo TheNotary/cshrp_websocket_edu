@@ -18,13 +18,11 @@ namespace WebsocketEdu
 
         static void Main(string[] args)
         {
-            // Console.WriteLine(new string('*', 65535) + "hello");
             TcpListener server = new TcpListener(IPAddress.Parse("0.0.0.0"), 80);
 
             server.Start();
             Console.WriteLine("Server has started on 127.0.0.1:80.{0}Waiting for a connection...", Environment.NewLine);
 
-            //enter to an infinite cycle to be able to handle every change in stream
             while (true)
             {
                 if (threads.Count < threadPoolSize)
@@ -46,94 +44,97 @@ namespace WebsocketEdu
             Console.WriteLine("A client connected.\n");
             NetworkStream networkStream = tcpClient.GetStream();
 
-
-
             while (!tcpClient.Connected) ;
             while (tcpClient.Connected)
             {
                 while (!networkStream.DataAvailable) ; // block here till we have data
 
-                HandleClientCommunication(tcpClient, networkStream);
+                // 1.
+                // wait for the first 3 bytes to be available.  Websocket messages consist of a three byte header detailing 
+                // the shape of the incoming websocket frame...
+                while (tcpClient.Available < 2) ;
+
+                HandleClientMessage(tcpClient, networkStream);
             }
             tcpClient.Close();
         }
 
 
-        static void HandleClientCommunication(TcpClient tcpClient, NetworkStream networkStream)
+        static void HandleClientMessage(TcpClient tcpClient, NetworkStream networkStream)
         {
-            // 1.
-            // wait for the first 3 bytes to be available.  Websocket messages consist of a three byte header detailing 
-            // the shape of the incoming websocket frame...
-            while (tcpClient.Available < 3) ;
-
-            // 2. 
-            // Get the client's data now that they've at least gotten to the "GET" part or the frame header
-            Byte[] bytes = new Byte[3];
-            networkStream.Read(bytes, 0, bytes.Length);
-            String data = Encoding.UTF8.GetString(bytes);
+            // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
+            Byte[] headerBytes = new Byte[2];
+            networkStream.Read(headerBytes, 0, headerBytes.Length);
 
             Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
 
-            if (HandleHandshake(networkStream, data)) return;
+            if (HandleHandshake(networkStream, headerBytes)) return;
 
-            // Handle ordinary communication
-            HandleMessage(networkStream, bytes, tcpClient);
+            // Handle ordinary websocket communication
+            HandleMessage(networkStream, headerBytes, tcpClient);
         }
 
-        static void HandleMessage(NetworkStream stream, Byte[] bytes, TcpClient client)
+        static void HandleMessage(NetworkStream stream, Byte[] headerBytes, TcpClient client)
         {
-            bool fin  = (bytes[0] & 0b10000000) != 0,
-                 mask = (bytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
-            int opcode = bytes[0] & 0b00001111;        // expecting 0x0001, indicating a text message
+            bool fin      = (headerBytes[0] & 0b10000000) != 0,
+                 isMasked = (headerBytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
+            int opcode    =  headerBytes[0] & 0b00001111;        // expecting 0x01, indicating a text message
 
-            // determine the message length
-            object[] result = determineMessageLength(bytes);
-            ulong msglen = (ulong)result[0];
-            int offset = (int)result[1];
+            object[] result = determineMessageLength(headerBytes, stream);
+            ulong messageLength = (ulong) result[0];
+            
+            byte[] mask = isMasked ? readMask(headerBytes, stream) : new byte[0];
 
-
-            // TODO: Check if we have all of the message buffered yet
-            if ((ulong)bytes.Length < msglen - (ulong)offset)        // we got 65495 when we sent the payload, but we need 65538
-            {
-                ulong bytesNeeded = msglen - (ulong)offset - (ulong)bytes.Length;
-
-                Console.WriteLine("We don't have enough of the message!");
+            if (messageLength == 0) { 
+                Console.WriteLine("msglen == 0");
+                return;
             }
 
-
-            if (msglen == 0)
-                Console.WriteLine("msglen == 0");
-            else if (mask)
+            if (isMasked)
             {
-                Byte[] decoded = decodeMessage(bytes, offset);    // only has up to 65521 properly decoded, the rest are empty bytes...
+                ulong payloadLength = messageLength;
+                byte[] decoded = decodeMessage(stream, payloadLength, mask).ToArray();    // only has up to 65521 properly decoded, the rest are empty bytes...
 
                 string text = Encoding.UTF8.GetString(decoded);
-                Console.WriteLine("Client: {0}", text);
+                Console.WriteLine("> Client: {0}", text);
             }
-            else {
-                Console.WriteLine("mask bit not set");
-                string text = Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
-                Console.WriteLine("Client: {0}", text);
+            else // Why is this coded again if the spec prohibits it???  Maybe you should close the connection here
+            {
+                Console.WriteLine("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
+                byte[] clearText = new byte[messageLength];
+                stream.Read(clearText, 0, clearText.Length);
             }
 
         }
 
-        static object[] determineMessageLength(Byte[] bytes)
+        /* This message assumes the stream cursor is already at the first byte of the mask key
+         */
+        public static byte[] readMask(byte[] headerBytes, NetworkStream stream)
         {
-            int msglen = bytes[1] & 0b01111111;
-            int offset = 2;
-            ulong msglen64 = (ulong)msglen;
+            byte[] maskingKey = new byte[4];
 
-            if (msglen == 126)// 126 signifies an extended payload size of 16bits
+            stream.Read(maskingKey, 0, 4);
+            return maskingKey;
+        }
+
+        static object[] determineMessageLength(Byte[] headerBytes, Stream stream)
+        {
+            int msglen = headerBytes[1] & 0b01111111;
+            ulong msglen64 = (ulong) msglen;
+
+            if (msglen == 126) // 126 signifies an extended payload size of 16bits
             {
-                // We could use the ToUInt16, but it's less supported across frameworks than just using longs which are pretty big
-                msglen64 = BitConverter.ToUInt16(new byte[] { bytes[3], bytes[2] });
-                offset = 4;
+                byte[] balanceBytes = new byte[2];
+                stream.Read(balanceBytes, 0, balanceBytes.Length);
+
+                msglen64 = BitConverter.ToUInt16(new byte[] { balanceBytes[1], balanceBytes[0] });
             }
             if (msglen == 127)
             {
-                msglen64 = BitConverter.ToUInt64(new byte[] { bytes[9], bytes[8], bytes[7], bytes[6], bytes[5], bytes[4], bytes[3], bytes[2] });
-                offset = 10;
+                byte[] balanceBytes = new byte[8];
+                stream.Read(balanceBytes, 0, balanceBytes.Length);
+
+                msglen64 = BitConverter.ToUInt64(new byte[] { balanceBytes[7], balanceBytes[6], balanceBytes[5], balanceBytes[4], balanceBytes[3], balanceBytes[2], balanceBytes[1], balanceBytes[0] });
 
                 // To test the below notes, we need to manually buffer larger messages since the NIC's autobuffering is too
                 // latency friendly for this code to run ordinarily
@@ -143,38 +144,38 @@ namespace WebsocketEdu
                 // offset = 10;
             }
 
-            return new object[] { msglen64, offset };
+            Console.WriteLine("Payload length was: " + msglen64.ToString());
+
+            return new object[] { msglen64, 0 };
         }
 
 
-        static byte[] decodeMessage(Byte[] bytes, int offset)
+        static MemoryStream decodeMessage(Stream stream, ulong payloadLength, byte[] mask)
         {
-            Byte[] decoded = new Byte[bytes.Length];  // TODO, shouldn't this be bytes - offset actually?
+            MemoryStream decodedStream = new MemoryStream();
 
-            // read mask, has an offset of 2 or 4 at this point depending on... something to do with ... chance?
-            byte[] mask = new byte[4] { bytes[offset],
-                                    bytes[offset + 1],
-                                    bytes[offset + 2],
-                                    bytes[offset + 3] };
-
-
-            offset += 4;
-            for (int i = 0; i < bytes.Length - offset; i++)
+            for (ulong i = 0; i < payloadLength; i++)
             {
-                decoded[i] = (Byte)(bytes[offset + i] ^ mask[i % 4]);
+                byte maskI = (byte) mask[i % 4];
+                byte rawByte = (byte) stream.ReadByte();
+                byte decodedByte = (byte) (rawByte ^ maskI);
+                decodedStream.WriteByte(decodedByte);
             }
-            return decoded;
+            return decodedStream;
         }
 
-        public static bool HandleHandshake(Stream stream, string data)
+        public static bool HandleHandshake(Stream stream, byte[] headerBytes)
         {
-            if (!Regex.IsMatch(data, "^GET"))
+            String data = Encoding.UTF8.GetString(headerBytes);
+
+            if (data != "GE")  // The handshake always begins with the line "GET " and websocket frames can't begin with G unless an extension was negotiated
                 return false;
 
             StreamReader sr = new StreamReader(stream, Encoding.UTF8);
-            string webSocketHeader = ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
-            string webSocketKey = GenerateResponseWebsocketHeaderValue(webSocketHeader);
+            string inboundWebSocketHeaderLine = ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
+            string webSocketKey = GenerateResponseWebsocketHeaderValue(inboundWebSocketHeaderLine);
             RespondToHandshake(stream, webSocketKey);
+            Console.WriteLine("Upgraded client to websockets.");
             return true;
         }
 
@@ -196,13 +197,13 @@ namespace WebsocketEdu
         {
             string webSocketHeader = "";
             string websocketKey = "Sec-WebSocket-Key:";
-            string debug = "";
+            string debug = "GET";
             string line = "";
-            string priorLine = "";
-            while (true)
+            //string priorLine = "";
+            while (true)  // TODO: implement a receive timeout
             {
-                priorLine = line;
-                line = sr.ReadLine();
+                //priorLine = line;
+                line = sr.ReadLine();   // TODO: will this block until the stream get's a /r/n in it???
                 debug += line + "\r\n";
                 if (line == null) break;  // EOF reached
 
@@ -213,19 +214,18 @@ namespace WebsocketEdu
                 }
 
                 // check if we've got a double /r/n
-                if (line == "" && priorLine == "")
+                if (line == "") // if we're out of data and we received an empty line
                     break;
             }
             return webSocketHeader;
         }
 
 
-        static string GenerateResponseWebsocketHeaderValue(String data)
+        static string GenerateResponseWebsocketHeaderValue(String inboundWebSocketKey)
         {
-            string webSocketKey = new Regex("Sec-WebSocket-Key: (.*)").Match(data).Groups[1].Value.Trim();
             return Convert.ToBase64String(
-                    SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(webSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
-                );
+                    SHA1.Create().ComputeHash(
+                        Encoding.UTF8.GetBytes(inboundWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
         }
 
     }

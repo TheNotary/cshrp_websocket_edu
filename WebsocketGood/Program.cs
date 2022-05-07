@@ -42,7 +42,7 @@ namespace WebsocketEdu
             // This could be it's own thread while thread pool !full
             TcpClient tcpClient = ((TcpListener) server).AcceptTcpClient();
             Console.WriteLine("A client connected.\n");
-            NetworkStream networkStream = tcpClient.GetStream();
+            INetworkStream networkStream = new NetworkStreamProxy( tcpClient.GetStream() );
 
             while (!tcpClient.Connected) ;
             while (tcpClient.Connected)
@@ -50,31 +50,30 @@ namespace WebsocketEdu
                 while (!networkStream.DataAvailable) ; // block here till we have data
 
                 // 1.
-                // wait for the first 3 bytes to be available.  Websocket messages consist of a three byte header detailing 
+                // wait for the first 2 bytes to be available.  Websocket messages consist of a two byte header detailing 
                 // the shape of the incoming websocket frame...
                 while (tcpClient.Available < 2) ;
+                Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
 
-                HandleClientMessage(tcpClient, networkStream);
+                HandleClientMessage(networkStream);
             }
             tcpClient.Close();
         }
 
 
-        static void HandleClientMessage(TcpClient tcpClient, NetworkStream networkStream)
+        static void HandleClientMessage(INetworkStream networkStream)
         {
             // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
             Byte[] headerBytes = new Byte[2];
             networkStream.Read(headerBytes, 0, headerBytes.Length);
 
-            Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
-
             if (HandleHandshake(networkStream, headerBytes)) return;
 
             // Handle ordinary websocket communication
-            HandleMessage(networkStream, headerBytes, tcpClient);
+            HandleMessage(networkStream, headerBytes);
         }
 
-        static void HandleMessage(NetworkStream stream, Byte[] headerBytes, TcpClient client)
+        static void HandleMessage(INetworkStream stream, Byte[] headerBytes)
         {
             bool fin      = (headerBytes[0] & 0b10000000) != 0,
                  isMasked = (headerBytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
@@ -109,7 +108,7 @@ namespace WebsocketEdu
 
         /* This message assumes the stream cursor is already at the first byte of the mask key
          */
-        public static byte[] readMask(byte[] headerBytes, NetworkStream stream)
+        public static byte[] readMask(byte[] headerBytes, INetworkStream stream)
         {
             byte[] maskingKey = new byte[4];
 
@@ -117,7 +116,7 @@ namespace WebsocketEdu
             return maskingKey;
         }
 
-        static object[] determineMessageLength(Byte[] headerBytes, Stream stream)
+        static object[] determineMessageLength(Byte[] headerBytes, INetworkStream stream)
         {
             int msglen = headerBytes[1] & 0b01111111;
             ulong msglen64 = (ulong) msglen;
@@ -150,7 +149,7 @@ namespace WebsocketEdu
         }
 
 
-        static MemoryStream decodeMessage(Stream stream, ulong payloadLength, byte[] mask)
+        static MemoryStream decodeMessage(INetworkStream stream, ulong payloadLength, byte[] mask)
         {
             MemoryStream decodedStream = new MemoryStream();
 
@@ -164,14 +163,14 @@ namespace WebsocketEdu
             return decodedStream;
         }
 
-        public static bool HandleHandshake(Stream stream, byte[] headerBytes)
+        public static bool HandleHandshake(INetworkStream stream, byte[] headerBytes)
         {
             String data = Encoding.UTF8.GetString(headerBytes);
 
             if (data != "GE")  // The handshake always begins with the line "GET " and websocket frames can't begin with G unless an extension was negotiated
                 return false;
 
-            StreamReader sr = new StreamReader(stream, Encoding.UTF8);
+            StreamReader sr = new StreamReader(stream.Stream, Encoding.UTF8);
             string inboundWebSocketHeaderLine = ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
             string webSocketKey = GenerateResponseWebsocketHeaderValue(inboundWebSocketHeaderLine);
             RespondToHandshake(stream, webSocketKey);
@@ -180,7 +179,7 @@ namespace WebsocketEdu
         }
 
 
-        static void RespondToHandshake(Stream stream, string webSocketHeader)
+        static void RespondToHandshake(INetworkStream stream, string webSocketHeader)
         {
             const string eol = "\r\n"; // HTTP/1.1 defines the sequence CR LF as the end-of-line marker
             Byte[] response = Encoding.UTF8.GetBytes("HTTP/1.1 101 Switching Protocols" + eol

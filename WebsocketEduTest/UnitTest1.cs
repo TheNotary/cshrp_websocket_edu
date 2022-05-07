@@ -9,6 +9,7 @@ using System;
 using Xunit.Abstractions;
 using System.IO.Pipes;
 using Microsoft.Win32.SafeHandles;
+using Moq;
 
 namespace WebsocketEduTest
 {
@@ -40,23 +41,31 @@ namespace WebsocketEduTest
         [Fact]
         public void ItRespondsCorrectlyToAValidHandshake()
         {
-            string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {expectedWebsocketHeader}\r\n\r\n";
+            // Given
+            string expectedResponseWrites = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: Kfh9QIsMVZcl6xEPYxPHzW8SZ8w=\r\n\r\n";
+            string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
             Stream stream = CreateStreamWithTestString(testHttpRequest);
             byte[] headerBytes = new byte[2];
             stream.Read(headerBytes, 0, 2);
 
-            var mockedSocket = new MockSocketProxy();
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy();
 
-            bool result = WebsocketExample.HandleHandshake(stream, headerBytes);
+            // When
+            bool result = WebsocketExample.HandleHandshake((INetworkStream) networkStreamProxy, headerBytes);
 
+            output.WriteLine(networkStreamProxy.GetWritesAsString());
 
+            // Then
+            Assert.True(result);
+            Assert.Equal(expectedResponseWrites, networkStreamProxy.GetWritesAsString());
+            //Assert.Equal();
         }
 
         [Fact]
         public void ItImmediatelyReturnsFalseIfTheStreamIsWebsocketData()
         {
             string data = "i don't start with the word GET";
-            Stream stream = CreateStreamWithTestString(data);
+            INetworkStream stream = (INetworkStream) CreateStreamWithTestString(data);
             byte[] headerBytes = new byte[2];
             stream.Read(headerBytes, 0, 2);
 

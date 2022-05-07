@@ -9,6 +9,7 @@ using System;
 using Xunit.Abstractions;
 using System.IO.Pipes;
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 
 namespace WebsocketEduTest
 {
@@ -20,6 +21,43 @@ namespace WebsocketEduTest
         {
             this.output = output;
         }
+
+
+        
+
+
+        //[Fact]
+        //public void ItCanUseQueues()
+        //{
+        //    QueueStream qs = new QueueStream(null);
+
+        //    //Thread t = new Thread(new ParameterizedThreadStart(ListenToQueueStreamAndLogData));
+        //    //t.Start(qs);
+
+        //    qs.WriteByte(0b00000001);
+        //    qs.WriteByte(0b00000010);
+        //    qs.WriteByte(0b00000011);
+        //    qs.WriteByte(0b11111111); // this byte tells the client to close down
+
+        //    //t.Join();
+
+        //    Assert.True(true);
+        //}
+
+        //private void ListenToClientAndLogData(object? svr)
+        //{
+        //    if (svr == null) throw new ArgumentNullException(nameof(svr));
+        //    NetworkStream stream = client.GetStream();
+
+        //    while (!client.Connected) ;
+        //    while (client.Connected)
+        //    {
+        //        while (!stream.DataAvailable) ; // block here till we have data
+        //        int myByte = stream.ReadByte();
+        //        output.WriteLine(((int)myByte).ToString());
+        //        if (myByte == 255) client.Close(); // 6 is our magic disconnect byte
+        //    }
+        //}
 
 
         [Fact]

@@ -15,14 +15,16 @@ namespace WebsocketEdu
     {
         private static int threadPoolSize = 1;
         private static LinkedList<Thread> threads = new LinkedList<Thread>();
+        private static int port = 8080;
 
         static void Main(string[] args)
         {
-            TcpListener server = new TcpListener(IPAddress.Parse("0.0.0.0"), 80);
+            TcpListener server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
 
             server.Start();
-            Console.WriteLine("Server has started on 127.0.0.1:80.{0}Waiting for a connection...", Environment.NewLine);
+            Console.WriteLine("Server has started on 127.0.0.1:{0}.{1}Waiting for a connection...", port, Environment.NewLine);
 
+            // FIXME: that weird bug where the console doesn't update is probably because I'm using this while:true loop and not explicitly managing updates
             while (true)
             {
                 if (threads.Count < threadPoolSize)

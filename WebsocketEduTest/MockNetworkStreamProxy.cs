@@ -22,6 +22,24 @@ namespace WebsocketEduTest
             _writeStream = new MemoryStream();
         }
 
+        public MockNetworkStreamProxy(FeedableMemoryStream fms)
+        {
+            _feedableMemoryStream = fms;
+            _stream = _feedableMemoryStream;
+            _writeStream = new MemoryStream();
+        }
+
+        public MockNetworkStreamProxy(string testString)
+        {
+            _feedableMemoryStream = new FeedableMemoryStream();
+            byte[] buffer = Encoding.ASCII.GetBytes(testString);
+            _feedableMemoryStream.Write(buffer, 0, buffer.Length);
+            _feedableMemoryStream.Seek(0, SeekOrigin.Begin);
+
+            _stream = _feedableMemoryStream;
+            _writeStream = new MemoryStream();
+        }
+
         public bool DataAvailable => throw new NotImplementedException();
 
         public Stream Stream => _stream;

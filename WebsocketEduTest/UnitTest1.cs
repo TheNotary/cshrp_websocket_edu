@@ -35,34 +35,31 @@ namespace WebsocketEduTest
         public void ItRespondsCorrectlyToAValidHandshake()
         {
             // Given
-            string expectedResponseWrites = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: Kfh9QIsMVZcl6xEPYxPHzW8SZ8w=\r\n\r\n";
+            string expectedResponseWrites = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
             string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
-            Stream stream = CreateStreamWithTestString(testHttpRequest);
-            byte[] headerBytes = new byte[2];
-            stream.Read(headerBytes, 0, 2);
-
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy();
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(testHttpRequest);
 
             // When
-            bool result = WebsocketExample.HandleHandshake((INetworkStream) networkStreamProxy, headerBytes);
+            byte[] headerBytes = new byte[2];
+            networkStreamProxy.Read(headerBytes, 0, 2);
 
-            output.WriteLine(networkStreamProxy.GetWritesAsString());
+            bool result = WebsocketExample.HandleHandshake((INetworkStream) networkStreamProxy, headerBytes);
 
             // Then
             Assert.True(result);
             Assert.Equal(expectedResponseWrites, networkStreamProxy.GetWritesAsString());
-            //Assert.Equal();
         }
 
         [Fact]
         public void ItImmediatelyReturnsFalseIfTheStreamIsWebsocketData()
         {
             string data = "i don't start with the word GET";
-            INetworkStream stream = (INetworkStream) CreateStreamWithTestString(data);
-            byte[] headerBytes = new byte[2];
-            stream.Read(headerBytes, 0, 2);
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(data));
 
-            bool result = WebsocketExample.HandleHandshake(stream, headerBytes);
+            byte[] headerBytes = new byte[2];
+            networkStreamProxy.Read(headerBytes, 0, 2);
+
+            bool result = WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
 
             Assert.False(result);
         }
@@ -71,6 +68,17 @@ namespace WebsocketEduTest
         private Stream CreateStreamWithTestString(string testString)
         {
             Stream stream = new MemoryStream();
+
+            byte[] buffer = Encoding.ASCII.GetBytes(testString);
+            stream.Write(buffer, 0, buffer.Length);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            return stream;
+        }
+
+        private FeedableMemoryStream CreateStreamWithTestStringFeedable(string testString)
+        {
+            FeedableMemoryStream stream = new FeedableMemoryStream();
 
             byte[] buffer = Encoding.ASCII.GetBytes(testString);
             stream.Write(buffer, 0, buffer.Length);

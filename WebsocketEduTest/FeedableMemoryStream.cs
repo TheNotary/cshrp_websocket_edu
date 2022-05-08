@@ -2,7 +2,7 @@ using System.IO;
 
 namespace WebsocketEduTest
 {
-    class FeedableMemoryStream : MemoryStream
+    public class FeedableMemoryStream : MemoryStream
     {
         long writePosition = 0;
 

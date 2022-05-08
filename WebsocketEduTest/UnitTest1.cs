@@ -2,14 +2,7 @@ using Xunit;
 using WebsocketEdu;
 using System.IO;
 using System.Text;
-using System.Net.Sockets;
-using System.Net;
-using System.Threading;
-using System;
 using Xunit.Abstractions;
-using System.IO.Pipes;
-using Microsoft.Win32.SafeHandles;
-using Moq;
 
 namespace WebsocketEduTest
 {

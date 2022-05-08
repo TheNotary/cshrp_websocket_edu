@@ -1,49 +1,59 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 
 namespace WebsocketEdu
 {
-
     /*
      * This application is a basic example of a working websocket server implementation.  
      * 
      * */
     public class WebsocketExample
     {
-        private static int threadPoolSize = 1;
+        private static int threadPoolSize = 10;
         private static LinkedList<Thread> threads = new LinkedList<Thread>();
-        private static int port = 8080;
+        private static int port = 80;
+        private static TcpListener? server;
 
         static void Main(string[] args)
         {
-            TcpListener server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
+            server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
 
             server.Start();
             Console.WriteLine("Server has started on 127.0.0.1:{0}.{1}Waiting for a connection...", port, Environment.NewLine);
 
-            // FIXME: that weird bug where the console doesn't update is probably because I'm using this while:true loop and not explicitly managing updates
+            ThreadManagementLoop();
+
+            Console.WriteLine("Press 'q' to quit at any time.");
+            while (Console.Read() != 'q') ;
+        }
+
+        public static void ThreadManagementLoop()
+        {
             while (true)
             {
                 if (threads.Count < threadPoolSize)
                 {
-                    Thread t = new Thread(new ParameterizedThreadStart(HandleNewClientConnection));
+                    Thread t = new Thread(new ParameterizedThreadStart(HandleNewClientConnectionInThread));
                     t.Start(server);
                     threads.AddLast(t);
+                    Console.WriteLine("Started new thread, threadcount at " + threads.Count);
                 }
+                // FIXME: that weird bug where the console doesn't update is probably because I'm using this while:true loop and not explicitly managing updates
+                Thread.Sleep(500);
             }
         }
 
-        public static void HandleNewClientConnection(object? server)
+        public static void HandleNewClientConnectionInThread(object? server)
         {
             if (server == null)
                 throw new ArgumentNullException(nameof(server));
 
             // This could be it's own thread while thread pool !full
             TcpClient tcpClient = ((TcpListener) server).AcceptTcpClient();
-            Console.WriteLine("A client connected.\n");
+            string remoteIp = tcpClient.Client.RemoteEndPoint.ToString();
+            Console.WriteLine("A client connected from {0}", remoteIp);
             INetworkStream networkStream = new NetworkStreamProxy( tcpClient.GetStream() );
 
             while (!tcpClient.Connected) ;
@@ -57,11 +67,19 @@ namespace WebsocketEdu
                 while (tcpClient.Available < 2) ;
                 Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
 
-                HandleClientMessage(networkStream);
+                try
+                {
+                    HandleClientMessage(networkStream);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("  << Exception encountered, closing client :p >>" + "\r\n" + ex.Message);
+                    networkStream.Stream.Close();
+                    tcpClient.Close();
+                    break;
+                }
             }
-            tcpClient.Close();
         }
-
 
         static void HandleClientMessage(INetworkStream networkStream)
         {
@@ -72,10 +90,10 @@ namespace WebsocketEdu
             if (HandleHandshake(networkStream, headerBytes)) return;
 
             // Handle ordinary websocket communication
-            HandleMessage(networkStream, headerBytes);
+            HandleWebsocketMessage(networkStream, headerBytes);
         }
 
-        static void HandleMessage(INetworkStream stream, Byte[] headerBytes)
+        static void HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
         {
             bool fin      = (headerBytes[0] & 0b10000000) != 0,
                  isMasked = (headerBytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
@@ -88,7 +106,6 @@ namespace WebsocketEdu
 
             if (messageLength == 0) { 
                 Console.WriteLine("msglen == 0");
-                return;
             }
 
             if (isMasked)
@@ -96,16 +113,48 @@ namespace WebsocketEdu
                 ulong payloadLength = messageLength;
                 byte[] decoded = decodeMessage(stream, payloadLength, mask).ToArray();    // only has up to 65521 properly decoded, the rest are empty bytes...
 
-                string text = Encoding.UTF8.GetString(decoded);
-                Console.WriteLine("> Client: {0}", text);
+                if (opcode == 0x01) // text message
+                {
+                    string text = Encoding.UTF8.GetString(decoded);
+                    Console.WriteLine("> Client: {0}", text);
+                    return;
+                }
+                if (opcode == 0x08) // close message
+                {
+
+                    byte[] closeCode = payloadLength != 0 
+                        ? decoded.Reverse().ToArray() 
+                        : new byte[0];
+
+
+                    string closeCodeString = closeCode.Length > 0 
+                        ? "Close frame code was " + BitConverter.ToInt16(decoded.Reverse().ToArray(), 0).ToString()
+                        : "There was no close code.";
+
+                    byte[] response = BuildCloseFrame(decoded);
+
+
+                    stream.Write(response, 0, response.Length);
+                    throw new Exception("The client sent a close frame.  " + closeCodeString);
+                }
             }
-            else // Why is this coded again if the spec prohibits it???  Maybe you should close the connection here
+            else
             {
-                Console.WriteLine("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
                 byte[] clearText = new byte[messageLength];
                 stream.Read(clearText, 0, clearText.Length);
+                throw new Exception("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
             }
 
+        }
+
+        public static byte[] BuildCloseFrame(byte[] closeCodeBytes)
+        {
+            MemoryStream output = new MemoryStream();
+            //byte[] closeCodeBytes = BitConverter.GetBytes(closeCode);
+            output.WriteByte(0b10001000); // opcode for a finished, closed frame
+            output.WriteByte(0x02);       // length of close payload being 2, this message isn't masked, they say there's no vulnerability to the server...
+            output.Write(closeCodeBytes, 0, closeCodeBytes.Length);
+            return output.ToArray();
         }
 
         /* This message assumes the stream cursor is already at the first byte of the mask key
@@ -150,7 +199,6 @@ namespace WebsocketEdu
             return new object[] { msglen64, 0 };
         }
 
-
         static MemoryStream decodeMessage(INetworkStream stream, ulong payloadLength, byte[] mask)
         {
             MemoryStream decodedStream = new MemoryStream();
@@ -159,7 +207,7 @@ namespace WebsocketEdu
             {
                 byte maskI = (byte) mask[i % 4];
                 byte rawByte = (byte) stream.ReadByte();
-                byte decodedByte = (byte) (rawByte ^ maskI);
+                byte decodedByte = (byte) (rawByte ^ maskI);  // 3 233  11 1110 1001
                 decodedStream.WriteByte(decodedByte);
             }
             return decodedStream;
@@ -180,7 +228,6 @@ namespace WebsocketEdu
             return true;
         }
 
-
         static void RespondToHandshake(INetworkStream stream, string webSocketHeader)
         {
             const string eol = "\r\n"; // HTTP/1.1 defines the sequence CR LF as the end-of-line marker
@@ -197,8 +244,10 @@ namespace WebsocketEdu
         public static string ReadHttpUpgradeRequestAndReturnWebsocketHeader(StreamReader sr)
         {
             string webSocketHeader = "";
+            string requestedResource = "";
             string websocketKey = "Sec-WebSocket-Key:";
-            string debug = "GET";
+            string resourceRequestedLine = "GET /";
+            string debug = "GE";
             string line = "";
             //string priorLine = "";
             while (true)  // TODO: implement a receive timeout
@@ -207,6 +256,17 @@ namespace WebsocketEdu
                 line = sr.ReadLine();   // TODO: will this block until the stream get's a /r/n in it???
                 debug += line + "\r\n";
                 if (line == null) break;  // EOF reached
+
+                string firstLine = "GE" + line;
+                if (firstLine.Length >= 5 &&
+                    firstLine.Substring(0, 5) == resourceRequestedLine)
+                {
+                    line = "GE" + line;
+
+                    requestedResource = line
+                        .Replace("GET /", "/")
+                        .Replace(" HTTP/1.1", "");
+                }
 
                 // handle extracting websocket key
                 if (line.StartsWith(websocketKey))
@@ -218,6 +278,16 @@ namespace WebsocketEdu
                 if (line == "") // if we're out of data and we received an empty line
                     break;
             }
+
+            var debugMessage = "Requested Resource: " + requestedResource + "\r\n"
+                             + "Websocket Header: " + webSocketHeader + "\r\n"
+                             + "Handshake Request: \r\n" + debug;
+            Console.WriteLine(debugMessage);
+
+            // ValidateThatThisIsReallyAValidWebsocketUpgradeRequest()
+            if (webSocketHeader == "")
+                throw new Exception("could not extract websocket header from handshake.  Wrong number?");
+
             return webSocketHeader;
         }
 

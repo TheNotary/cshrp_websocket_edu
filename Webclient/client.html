@@ -20,6 +20,7 @@
 
     var btnSendEditor = document.querySelector("#send-editor"),
         btnSendLargeData = document.querySelector("#send-large-data"),
+        btnSendClose = document.querySelector("#close-connection"),
         output = document.querySelector("#output"),
         textarea = document.querySelector("textarea"),
         connectionStatus = document.querySelector("#connection-status"),
@@ -28,6 +29,7 @@
 
     btnSendEditor.addEventListener("click", onClickButton);
     btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
+    btnSendClose.addEventListener("click", btnSendClose_onClick);
 
 
     websocket.onopen = function (e) {
@@ -68,6 +70,10 @@
 
     function btnSendLargeData_onClick() {
         websocket.send("_".repeat(65533) + "UUUUU");  // 65538
+    }
+
+    function btnSendClose_onClick() {
+        websocket.close();
     }
 
     function sendEditorContent() {

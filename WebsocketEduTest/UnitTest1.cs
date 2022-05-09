@@ -10,6 +10,10 @@ namespace WebsocketEduTest
     {
         private readonly ITestOutputHelper output;
 
+        string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
+        byte[] validWebsocketHello = new byte[] { 0x01 };
+
+
         public UnitTest1(ITestOutputHelper output)
         {
             this.output = output;
@@ -64,8 +68,15 @@ namespace WebsocketEduTest
             Assert.False(result);
         }
 
+        [Fact]
+        public void ItHandlesHandshakesMessagesAndClosesCorrectly()
+        {
+            //given
 
-        private Stream CreateStreamWithTestString(string testString)
+        }
+
+
+            private Stream CreateStreamWithTestString(string testString)
         {
             Stream stream = new MemoryStream();
 

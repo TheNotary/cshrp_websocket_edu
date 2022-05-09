@@ -3,15 +3,17 @@ using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
 
+// Todo:
+// - Make it so the NetworkStreamProxy writes all reads into it's own secret buffer that can be printed for debug purposes
+
 namespace WebsocketEdu
 {
     /*
      * This application is a basic example of a working websocket server implementation.  
-     * 
      * */
     public class WebsocketExample
     {
-        private static int threadPoolSize = 10;
+        private static int threadPoolSize = 5;
         private static LinkedList<Thread> threads = new LinkedList<Thread>();
         private static int port = 80;
         private static TcpListener? server;
@@ -78,6 +80,9 @@ namespace WebsocketEdu
                     tcpClient.Close();
                     break;
                 }
+
+                networkStream.PrintBytesRecieved();
+                networkStream.ClearDebugBuffer();
             }
         }
 

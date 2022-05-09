@@ -44,6 +44,11 @@ namespace WebsocketEduTest
 
         public Stream Stream => _stream;
 
+        public void ClearDebugBuffer()
+        {
+            throw new NotImplementedException();
+        }
+
         public byte[] GetWrites()
         {
             return _writeStream.ToArray();
@@ -52,6 +57,11 @@ namespace WebsocketEduTest
         public string GetWritesAsString()
         {
             return Encoding.UTF8.GetString(_writeStream.ToArray());
+        }
+
+        public void PrintBytesRecieved()
+        {
+            throw new NotImplementedException();
         }
 
         public void Read(byte[] buffer, int offset, int count)

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace WebsocketEduTest
@@ -9,7 +10,9 @@ namespace WebsocketEduTest
         public void PutByte(int bits)
         {
             long currentPosition = this.Position;
-            if (writePosition < currentPosition) // Make sure the write head hasn't fallen behind due to client writes which... should be restricted actually
+            // Make sure the write head hasn't fallen behind due to client writes which...
+            // should be restricted actually
+            if (writePosition < currentPosition) 
                 writePosition = currentPosition;
 
             if (writePosition >= this.Capacity) // "manually" grow the stream if needed...
@@ -26,5 +29,12 @@ namespace WebsocketEduTest
             writePosition++;
         }
 
+        internal void PutBytes(byte[] bytes, int v, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                PutByte(bytes[i]); // Wow I'm lazy...
+            }
+        }
     }
 }

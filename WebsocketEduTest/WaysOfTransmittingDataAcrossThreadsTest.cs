@@ -23,26 +23,58 @@ namespace WebsocketEduTest
         }
 
 
-        
 
 
-        //[Fact]
-        //public void ItCanUseQueues()
-        //{
-        //    QueueStream qs = new QueueStream(null);
 
-        //    //Thread t = new Thread(new ParameterizedThreadStart(ListenToQueueStreamAndLogData));
-        //    //t.Start(qs);
+        [Fact]
+        public void ItCanUseQueues()
+        {
+            QueueStream qs = new QueueStream();
 
-        //    qs.WriteByte(0b00000001);
-        //    qs.WriteByte(0b00000010);
-        //    qs.WriteByte(0b00000011);
-        //    qs.WriteByte(0b11111111); // this byte tells the client to close down
+            //Thread t = new Thread(new ParameterizedThreadStart(ListenToQueueStreamAndLogData));
+            //t.Start(qs);
 
-        //    //t.Join();
+            // Enqueued Bytes can be Read from the stream
+            byte expectedEnqueuedByte = 0x02;
+            qs.Enqueue(expectedEnqueuedByte);
+            byte actualEnqueuedByte = (byte) qs.ReadByte();
+            Assert.Equal(expectedEnqueuedByte, actualEnqueuedByte);
 
-        //    Assert.True(true);
-        //}
+            // ReadByte produces a -1 if the queue is empty
+            int nextEnqueuedByte =  qs.ReadByte();
+            Assert.Equal(-1, nextEnqueuedByte);
+
+            // Enqueued bytes can be read into a buffer
+            byte[] expectedEnqueuedBytes = new byte[] { 0x03, 0x04, 0x05, 0x06 };
+            qs.Enqueue(expectedEnqueuedBytes[0]);
+            qs.Enqueue(expectedEnqueuedBytes[1]);
+            qs.Enqueue(expectedEnqueuedBytes[2]);
+            qs.Enqueue(expectedEnqueuedBytes[3]);
+
+            byte[] buffer = new byte[4];
+            qs.Read(buffer, 0, buffer.Length);
+            Assert.Equal(expectedEnqueuedBytes, buffer);
+
+            // #Write will write to the output stream for future review
+
+            qs.WriteByte(0x07);
+
+            //qs.GetWrites();
+
+            // TODO:  I'm leaving off here because I need to write an actual test first and then implement
+            // the missing functionality in either QueueStream or in MockNetworkStreamProxy which may be
+            // enough on it's own...
+
+
+            //qs.WriteByte(0b00000001);
+            //qs.WriteByte(0b00000010);
+            //qs.WriteByte(0b00000011);
+            //qs.WriteByte(0b11111111); // this byte tells the client to close down
+
+            //t.Join();
+
+            Assert.True(true);
+        }
 
         //private void ListenToClientAndLogData(object? svr)
         //{

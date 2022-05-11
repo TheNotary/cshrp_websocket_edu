@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Sockets;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-using System.Threading.Tasks;
 using WebsocketEdu;
 
 namespace WebsocketEduTest
@@ -40,14 +37,14 @@ namespace WebsocketEduTest
             _writeStream = new MemoryStream();
         }
 
+        public static explicit operator Stream(MockNetworkStreamProxy v)
+        {
+            return v.Stream;
+        }
+
         public bool DataAvailable => throw new NotImplementedException();
 
         public Stream Stream => _stream;
-
-        public void ClearDebugBuffer()
-        {
-            throw new NotImplementedException();
-        }
 
         public byte[] GetWrites()
         {
@@ -59,6 +56,15 @@ namespace WebsocketEduTest
             return Encoding.UTF8.GetString(_writeStream.ToArray());
         }
 
+        /* No need to implement since the bytes read are already known to the parent test
+         * */
+        public void ClearDebugBuffer()
+        {
+            throw new NotImplementedException();
+        }
+
+        /* No need to implement since the bytes read are already known to the parent test
+         * */
         public void PrintBytesRecieved()
         {
             throw new NotImplementedException();
@@ -83,5 +89,16 @@ namespace WebsocketEduTest
         {
             _writeStream.WriteByte(value);
         }
+
+        public void PutByte(byte value)
+        {
+            _feedableMemoryStream.PutByte(value);
+        }
+
+        public void PutBytes(byte[] bytes)
+        {
+            _feedableMemoryStream.PutBytes(bytes, 0, bytes.Length);
+        }
+
     }
 }

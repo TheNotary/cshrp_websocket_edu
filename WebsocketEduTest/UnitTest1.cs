@@ -3,6 +3,8 @@ using WebsocketEdu;
 using System.IO;
 using System.Text;
 using Xunit.Abstractions;
+using System.Threading;
+using System;
 
 namespace WebsocketEduTest
 {
@@ -11,7 +13,8 @@ namespace WebsocketEduTest
         private readonly ITestOutputHelper output;
 
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
-        byte[] validWebsocketHello = new byte[] { 0x01 };
+        byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
+        string validHandshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
 
 
         public UnitTest1(ITestOutputHelper output)
@@ -26,7 +29,7 @@ namespace WebsocketEduTest
             string expectedWebsocketHeader = "websocketblah";
             string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {expectedWebsocketHeader}\r\n\r\n";
             Stream stream = CreateStreamWithTestString(testHttpRequest);
-            StreamReader sr = new StreamReader(stream);
+            NetworkStreamReader sr = new NetworkStreamReader(stream);
 
             // When
             string websocketHeader = WebsocketExample.ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
@@ -47,7 +50,7 @@ namespace WebsocketEduTest
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, 2);
 
-            bool result = WebsocketExample.HandleHandshake((INetworkStream) networkStreamProxy, headerBytes);
+            bool result = WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
 
             // Then
             Assert.True(result);
@@ -72,11 +75,47 @@ namespace WebsocketEduTest
         public void ItHandlesHandshakesMessagesAndClosesCorrectly()
         {
             //given
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(validHttpUpgradeRequest));
+            //validWebsocketHello
 
         }
 
+        [Fact]
+        public void ItWaitsForTheCompleteFrameToComeInEvenIfItsSentSlowDuringHandshaking()
+        {
+            // given
+            string firstPartOfHandshake = validHttpUpgradeRequest.Substring(0, 3);
+            string secondPartOfHandshake = validHttpUpgradeRequest.Substring(3);
+            MockNetworkStreamProxy networkStreamProxy = 
+                new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(firstPartOfHandshake));
 
-            private Stream CreateStreamWithTestString(string testString)
+            Thread handleHandshakeThread = 
+                new Thread(new ParameterizedThreadStart(PerformHandleHandshakeInThread));
+
+            // when
+            handleHandshakeThread.Start(networkStreamProxy);
+
+            // Then
+            // this will block forever
+            Thread.Sleep(100);
+            networkStreamProxy.PutBytes(Encoding.UTF8.GetBytes(secondPartOfHandshake));
+            handleHandshakeThread.Join();
+
+            Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
+        }
+
+        private void PerformHandleHandshakeInThread(object? obj)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
+            MockNetworkStreamProxy networkStreamProxy = (MockNetworkStreamProxy) obj;
+
+            byte[] headerBytes = new byte[2];
+            networkStreamProxy.Read(headerBytes, 0, 2);
+
+            WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
+        }
+
+        private Stream CreateStreamWithTestString(string testString)
         {
             Stream stream = new MemoryStream();
 

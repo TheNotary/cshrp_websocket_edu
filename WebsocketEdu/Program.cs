@@ -131,7 +131,6 @@ namespace WebsocketEdu
                         ? decoded.Reverse().ToArray() 
                         : new byte[0];
 
-
                     string closeCodeString = closeCode.Length > 0 
                         ? "Close frame code was " + BitConverter.ToInt16(decoded.Reverse().ToArray(), 0).ToString()
                         : "There was no close code.";
@@ -225,7 +224,7 @@ namespace WebsocketEdu
             if (data != "GE")  // The handshake always begins with the line "GET " and websocket frames can't begin with G unless an extension was negotiated
                 return false;
 
-            StreamReader sr = new StreamReader(stream.Stream, Encoding.UTF8);
+            NetworkStreamReader sr = new NetworkStreamReader(stream);
             string inboundWebSocketHeaderLine = ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
             string webSocketKey = GenerateResponseWebsocketHeaderValue(inboundWebSocketHeaderLine);
             RespondToHandshake(stream, webSocketKey);
@@ -246,33 +245,36 @@ namespace WebsocketEdu
         }
 
         // This function Read stream until you get to /r/n/r/n meaning the end of their opening HTTP upgrade request
-        public static string ReadHttpUpgradeRequestAndReturnWebsocketHeader(StreamReader sr)
+        public static string ReadHttpUpgradeRequestAndReturnWebsocketHeader(NetworkStreamReader sr)
         {
             string webSocketHeader = "";
             string requestedResource = "";
             string websocketKey = "Sec-WebSocket-Key:";
             string resourceRequestedLine = "GET /";
             string debug = "GE";
-            string line = "";
-            //string priorLine = "";
+            string line;
+            bool processedFirstLine = false;
             while (true)  // TODO: implement a receive timeout
             {
-                //priorLine = line;
-                line = sr.ReadLine();   // TODO: will this block until the stream get's a /r/n in it???
+                line = sr.ReadUntilCarriageReturn();
                 debug += line + "\r\n";
-                if (line == null) break;  // EOF reached
+                if (line == "") break;  // EOF reached
 
-                string firstLine = "GE" + line;
-                if (firstLine.Length >= 5 &&
-                    firstLine.Substring(0, 5) == resourceRequestedLine)
+                if (!processedFirstLine)  // ProcessFirstLine()
                 {
-                    line = "GE" + line;
+                    string firstLine = "GE" + line;
+                    if (firstLine.Length >= 5 &&
+                        firstLine.Substring(0, 5) == resourceRequestedLine)
+                    {
+                        line = "GE" + line;
 
-                    requestedResource = line
-                        .Replace("GET /", "/")
-                        .Replace(" HTTP/1.1", "");
+                        requestedResource = line
+                            .Replace("GET /", "/")
+                            .Replace(" HTTP/1.1", "");
+                    }
+                    processedFirstLine = true;
                 }
-
+                
                 // handle extracting websocket key
                 if (line.StartsWith(websocketKey))
                 {

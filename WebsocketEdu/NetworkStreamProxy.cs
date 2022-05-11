@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Text;
 
 namespace WebsocketEdu
 {
@@ -37,15 +38,14 @@ namespace WebsocketEdu
             _networkStream.WriteByte(value);
         }
 
-        public void PrintBytesRecieved()
+        public string PrintBytesRecieved()
         {
-            //readLog.Seek(0, SeekOrigin.Begin);
-            Console.WriteLine("Bytes in Frame were:");
+            StringBuilder sb = new StringBuilder();
             byte[] bytes = readLog.ToArray();
             for (int i = 0; i < bytes.Length; i++) {
-                Console.Write(bytes[i].ToString() + " ");
+                sb.Append(bytes[i].ToString() + " ");
             }
-            Console.WriteLine();
+            return sb.ToString();
         }
 
         public void ClearDebugBuffer()

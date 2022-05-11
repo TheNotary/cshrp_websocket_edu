@@ -8,7 +8,7 @@
         void WriteByte(byte value);
         void Read(byte[] buffer, int offset, int count);
         void Write(byte[] buffer, int offset, int count);
-        void PrintBytesRecieved();
+        string PrintBytesRecieved();
         void ClearDebugBuffer();
     }
 }

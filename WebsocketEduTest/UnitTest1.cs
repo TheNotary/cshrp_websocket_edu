@@ -10,12 +10,12 @@ namespace WebsocketEduTest
 {
     public class UnitTest1
     {
-        private readonly ITestOutputHelper output;
-
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
+        byte[] validClientClose = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
         string validHandshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
 
+        private readonly ITestOutputHelper output;
 
         public UnitTest1(ITestOutputHelper output)
         {
@@ -75,9 +75,45 @@ namespace WebsocketEduTest
         public void ItHandlesHandshakesMessagesAndClosesCorrectly()
         {
             //given
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(validHttpUpgradeRequest));
+            MockNetworkStreamProxy networkStreamProxy = 
+                new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(validHttpUpgradeRequest));
             //validWebsocketHello
 
+            Thread handleClientMessageThread =
+                new Thread(new ParameterizedThreadStart(PerformHandleClientMessage));
+
+            // when
+            //var t = new Thread(() => { Console.WriteLine(i); });
+            //t.Start();
+            handleClientMessageThread.Start(new object[] { networkStreamProxy, 2 });
+            // FIXME: These PutBytes are overwriting the existing contest of the stream...
+            networkStreamProxy.PutBytes(validWebsocketHello);
+            networkStreamProxy.PutBytes(validWebsocketHello);
+            handleClientMessageThread.Join();
+
+            // then
+            Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
+            Assert.Equal("z", networkStreamProxy.PrintBytesRecieved());
+
+
+
+        }
+
+        /* Parameters:
+         *   - INetworkStream stream - Network stream to read from and write to throughout testing
+         *   - int times - Number of times to call HandleClientMessage
+         * */
+        private void PerformHandleClientMessage(object? obj)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
+            object[] array = (object[]) obj;
+            INetworkStream stream = (INetworkStream)array[0];
+            int times = (int)array[1];
+
+            for(int i = 0; i < times; i++)
+            {
+                WebsocketExample.HandleClientMessage(stream);
+            }
         }
 
         [Fact]
@@ -113,17 +149,6 @@ namespace WebsocketEduTest
             networkStreamProxy.Read(headerBytes, 0, 2);
 
             WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
-        }
-
-        private Stream CreateStreamWithTestString(string testString)
-        {
-            Stream stream = new MemoryStream();
-
-            byte[] buffer = Encoding.ASCII.GetBytes(testString);
-            stream.Write(buffer, 0, buffer.Length);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            return stream;
         }
 
         private FeedableMemoryStream CreateStreamWithTestStringFeedable(string testString)

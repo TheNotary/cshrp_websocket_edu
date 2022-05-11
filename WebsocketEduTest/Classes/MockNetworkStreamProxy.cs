@@ -11,12 +11,14 @@ namespace WebsocketEduTest
         private readonly Stream _stream;
         private readonly FeedableMemoryStream _feedableMemoryStream;
         private readonly MemoryStream _writeStream;
+        private readonly MemoryStream readLog;
 
         public MockNetworkStreamProxy()
         {
             _feedableMemoryStream = new FeedableMemoryStream();
             _stream = _feedableMemoryStream;
             _writeStream = new MemoryStream();
+            readLog = new MemoryStream();
         }
 
         public MockNetworkStreamProxy(FeedableMemoryStream fms)
@@ -24,6 +26,7 @@ namespace WebsocketEduTest
             _feedableMemoryStream = fms;
             _stream = _feedableMemoryStream;
             _writeStream = new MemoryStream();
+            readLog = new MemoryStream();
         }
 
         public MockNetworkStreamProxy(string testString)
@@ -35,6 +38,7 @@ namespace WebsocketEduTest
 
             _stream = _feedableMemoryStream;
             _writeStream = new MemoryStream();
+            readLog = new MemoryStream();
         }
 
         public static explicit operator Stream(MockNetworkStreamProxy v)
@@ -51,6 +55,9 @@ namespace WebsocketEduTest
             return _writeStream.ToArray();
         }
 
+        /* This message return, as a string, all the characters that were written to the _writeStream 
+         * which simulates what this client would have written to the tcp stream.
+         * */
         public string GetWritesAsString()
         {
             return Encoding.UTF8.GetString(_writeStream.ToArray());
@@ -65,19 +72,28 @@ namespace WebsocketEduTest
 
         /* No need to implement since the bytes read are already known to the parent test
          * */
-        public void PrintBytesRecieved()
+        public string PrintBytesRecieved()
         {
-            throw new NotImplementedException();
+            StringBuilder sb = new StringBuilder();  // TODO: Abstract class...
+            byte[] bytes = readLog.ToArray();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                sb.Append(bytes[i].ToString() + " ");
+            }
+            return sb.ToString();
         }
 
         public void Read(byte[] buffer, int offset, int count)
         {
             _feedableMemoryStream.Read(buffer, offset, count);
+            readLog.Write(buffer, offset, count);
         }
 
         public int ReadByte()
         {
-            return (int) _feedableMemoryStream.ReadByte();
+            int thisByte = _feedableMemoryStream.ReadByte();
+            readLog.WriteByte((byte)thisByte);
+            return thisByte;
         }
 
         public void Write(byte[] buffer, int offset, int count)

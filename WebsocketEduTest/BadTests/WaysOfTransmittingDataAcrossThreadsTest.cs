@@ -22,10 +22,6 @@ namespace WebsocketEduTest
             this.output = output;
         }
 
-
-
-
-
         [Fact]
         public void ItCanUseQueues()
         {
@@ -134,37 +130,6 @@ namespace WebsocketEduTest
             }
         }
 
-        [Fact]
-        public void ItCanUseFeedableMemoryStreams()
-        {
-            FeedableMemoryStream fms = new FeedableMemoryStream();
-
-            Thread t = new Thread(new ParameterizedThreadStart(ListenToFeedableMemoryStream));
-            t.Start(fms);
-
-            fms.PutByte(1);
-            fms.PutByte(2);
-            fms.PutByte(3);
-            fms.PutByte(255);
-
-            t.Join();
-        }
-
-        private void ListenToFeedableMemoryStream(object? strm)
-        {
-            if (strm == null) throw new ArgumentNullException(nameof(strm));
-            Stream stream = (Stream)strm;
-
-            while (true)
-            {
-                if (stream.Position < stream.Length)
-                {
-                    int myByte = stream.ReadByte();
-                    if (myByte == 255) break; // A 255 byte can signal the end of the stream
-                    output.WriteLine("Data Recieved: " + myByte);
-                }
-            }
-        }
 
         [Fact]
         public void ItCanUsePipedOutputStreams()

@@ -96,7 +96,9 @@ namespace WebsocketEdu
                     break;
                 }
 
-                networkStream.PrintBytesRecieved();
+                Console.WriteLine("Bytes in Frame were:" +
+                                  "\r\n" + networkStream.PrintBytesRecieved());
+                
                 networkStream.ClearDebugBuffer();
             }
         }

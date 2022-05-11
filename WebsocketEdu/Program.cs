@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
+using System.Collections.Generic;
 
 // Todo:
 // - Make it so the NetworkStreamProxy writes all reads into it's own secret buffer that can be printed for debug purposes
@@ -13,7 +14,7 @@ namespace WebsocketEdu
      * */
     public class WebsocketExample
     {
-        private static int threadPoolSize = 5;
+        private static int threadPoolSize = 1;
         private static LinkedList<Thread> threads = new LinkedList<Thread>();
         private static int port = 80;
         private static TcpListener? server;
@@ -37,6 +38,7 @@ namespace WebsocketEdu
             {
                 if (threads.Count < threadPoolSize)
                 {
+                    //GC.Collect(); // For testing memory leaks
                     Thread t = new Thread(new ParameterizedThreadStart(HandleNewClientConnectionInThread));
                     t.Start(server);
                     threads.AddLast(t);
@@ -44,6 +46,18 @@ namespace WebsocketEdu
                 }
                 // FIXME: that weird bug where the console doesn't update is probably because I'm using this while:true loop and not explicitly managing updates
                 Thread.Sleep(500);
+
+                // Clean up dead threads
+                if (threads.First == null) continue;
+                LinkedListNode<Thread> node = threads.First;
+                for (int i = 0; i < threads.Count; i++)
+                {
+                    Thread t = node.Value;
+                    if (!t.IsAlive)
+                        threads.Remove(t);
+                    if (node.Next == null) break;
+                    node = node.Next;
+                }
             }
         }
 
@@ -78,6 +92,7 @@ namespace WebsocketEdu
                     Console.WriteLine("  << Exception encountered, closing client :p >>" + "\r\n" + ex.Message);
                     networkStream.Stream.Close();
                     tcpClient.Close();
+                    tcpClient.Dispose();
                     break;
                 }
 
@@ -86,7 +101,7 @@ namespace WebsocketEdu
             }
         }
 
-        static void HandleClientMessage(INetworkStream networkStream)
+        public static void HandleClientMessage(INetworkStream networkStream)
         {
             // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
             Byte[] headerBytes = new Byte[2];
@@ -189,13 +204,6 @@ namespace WebsocketEdu
                 stream.Read(balanceBytes, 0, balanceBytes.Length);
 
                 msglen64 = BitConverter.ToUInt64(new byte[] { balanceBytes[7], balanceBytes[6], balanceBytes[5], balanceBytes[4], balanceBytes[3], balanceBytes[2], balanceBytes[1], balanceBytes[0] });
-
-                // To test the below notes, we need to manually buffer larger messages since the NIC's autobuffering is too
-                // latency friendly for this code to run ordinarily
-                Console.WriteLine("TODO: msglen == 127, needs qword to store msglen");
-                // i don't really know the byte order, please edit this
-                // msglen = BitConverter.ToUInt64(new byte[] { data[5], data[4], data[3], data[2], data[9], data[8], data[7], data[6] }, 0);
-                // offset = 10;
             }
 
             Console.WriteLine("Payload length was: " + msglen64.ToString());

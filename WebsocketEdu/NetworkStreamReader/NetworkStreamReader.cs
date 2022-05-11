@@ -8,9 +8,9 @@ namespace WebsocketEdu
         readonly Stream _stream;
         StreamReader _reader;
 
-        public NetworkStreamReader(Stream stream)
+        public NetworkStreamReader(INetworkStream stream)
         {
-            _stream = stream;
+            _stream = stream.Stream;
             _reader = new StreamReader(_stream);
         }
 

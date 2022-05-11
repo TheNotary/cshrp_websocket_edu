@@ -28,7 +28,7 @@ namespace WebsocketEduTest
             // Given
             string expectedWebsocketHeader = "websocketblah";
             string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {expectedWebsocketHeader}\r\n\r\n";
-            Stream stream = CreateStreamWithTestString(testHttpRequest);
+            MockNetworkStreamProxy stream = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(testHttpRequest));
             NetworkStreamReader sr = new NetworkStreamReader(stream);
 
             // When

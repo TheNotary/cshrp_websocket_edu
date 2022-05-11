@@ -20,7 +20,7 @@ namespace WebsocketEduTest
             string firstLine = "GET / HTTP/1.1";
             string testHttpRequest = $"{firstLine}\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(testHttpRequest));
-            NetworkStreamReader nsr = new NetworkStreamReader((Stream) networkStreamProxy);
+            NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
             // When
             string myText = nsr.ReadUntilCarriageReturn();
@@ -54,7 +54,7 @@ namespace WebsocketEduTest
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
             MockNetworkStreamProxy networkStreamProxy = (MockNetworkStreamProxy)obj;
-            NetworkStreamReader nsr = new NetworkStreamReader((Stream) networkStreamProxy);
+            NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
             string line = nsr.ReadUntilCarriageReturn();
 

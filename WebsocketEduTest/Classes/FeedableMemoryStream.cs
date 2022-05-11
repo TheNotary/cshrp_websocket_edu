@@ -16,25 +16,26 @@ namespace WebsocketEduTest
             byte[] buffer = Encoding.ASCII.GetBytes(initialStreamContents);
             Write(buffer, 0, buffer.Length);
             Seek(0, SeekOrigin.Begin);
-            writePosition = buffer.Length + 1;
+            writePosition = buffer.Length;
         }
 
         public void PutByte(int bits)
         {
-            long currentPosition = this.Position;
+            long initialPosition = Position;
 
             // Make sure the write head hasn't fallen behind due to client writes which...
             // should be restricted actually
-            if (writePosition < currentPosition) 
-                writePosition = currentPosition;
+            //if (writePosition < Position) 
+            //    writePosition = Position + 1;
 
             if (writePosition >= Capacity) // "manually" grow the stream if needed...
             {
                 WriteByte((byte) bits);
-                Position = currentPosition;   // I don't like how race conditiony this feels
-                writePosition = currentPosition + 1;
+                Position = initialPosition;   // I don't like how race conditiony this feels
+                writePosition += 1;
                 return;
             }
+
 
             byte[] buffer = GetBuffer();
             SetLength(Length + 1);

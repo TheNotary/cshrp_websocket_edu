@@ -52,13 +52,11 @@ namespace WebsocketEduTest
             fms.PutByte(2);
             fms.PutByte(3);
 
-            string actual = "ABCDEFGHI";
-            actual.Should().StartWith("AB").And.EndWith("HI").And.Contain("EF").And.HaveLength(9);
-
             // Then
             Byte[] actualBytes = new byte[8];
             fms.Read(actualBytes, 0, actualBytes.Length);
-            Assert.Equal(new byte[] { 72, 101, 108, 108, 111, 1, 2, 3 }, actualBytes);
+
+            new byte[] { 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x01, 0x02, 0x03 }.Should().Equal(actualBytes);
         }
     }
 }

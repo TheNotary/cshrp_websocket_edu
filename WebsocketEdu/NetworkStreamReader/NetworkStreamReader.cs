@@ -42,9 +42,15 @@ namespace WebsocketEdu
             return sb.ToString();
         }
 
+        /* TODO/ FIXME: I need to write this method myself so that I only update the Position of 
+         * the stream by the least amount needed!
+         * */
         private int Read()
         {
-            return _reader.Read();
+            long originalPosition = _stream.Position;
+            int nextRead = _reader.Read();
+            _stream.Position = originalPosition + 1; // This will break on non-ascii my dude...
+            return nextRead;
         }
     }
 }

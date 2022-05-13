@@ -10,5 +10,7 @@
         void Write(byte[] buffer, int offset, int count);
         string PrintBytesRecieved();
         void ClearDebugBuffer();
+        string GetWritesAsString();
+        byte[] ToArray();
     }
 }

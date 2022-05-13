@@ -6,9 +6,11 @@ namespace WebsocketEduTest
 {
     public class FeedableMemoryStream : MemoryStream
     {
-        long writePosition = 0;
+        private readonly object putLock = new object();
+        long writePosition;
         public FeedableMemoryStream() : base()
         {
+            throw new NotImplementedException();  // this like... doesn't work right, always pass in a string I guess........ :(
         }
 
         public FeedableMemoryStream(string initialStreamContents)
@@ -19,40 +21,69 @@ namespace WebsocketEduTest
             writePosition = buffer.Length;
         }
 
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            // FIXME:  why is StreamReader#Read() calling THIS of all things?  And especiaqlly with a count of 1024...
+            lock (putLock)
+            {
+                int c = base.Read(buffer, offset, count);
+                return c;
+            }
+        }
+
+        public override int ReadByte()
+        {
+            lock (putLock)
+            {
+                return base.ReadByte();
+            }
+        }
         public void PutByte(int bits)
+        {
+            lock (putLock)
+            {
+                unlockedPutByte(bits);
+            }
+        }
+
+        private void unlockedPutByte(int bits)
         {
             long initialPosition = Position;
 
             // Make sure the write head hasn't fallen behind due to client writes which...
             // should be restricted actually
-            //if (writePosition < Position) 
-            //    writePosition = Position + 1;
+            if (writePosition < Position)
+                writePosition = Position + 1;
 
             if (writePosition >= Capacity) // "manually" grow the stream if needed...
             {
-                WriteByte((byte) bits);
+                base.WriteByte((byte)bits);
                 Position = initialPosition;   // I don't like how race conditiony this feels
                 writePosition += 1;
                 return;
             }
 
-
-            byte[] buffer = GetBuffer();
-            SetLength(Length + 1);
+            byte[] buffer = base.GetBuffer();
+            base.SetLength(Length + 1);
             buffer[writePosition] = (byte)bits;
             writePosition++;
         }
 
+
         public void PutBytes(byte[] bytes, int v, int length)
         {
-            long currentPosition = this.Position;
-
-            for (int i = 0; i < length; i++)
+            lock (putLock)
             {
-                PutByte(bytes[i]); // Wow I'm lazy...
-            }
+                //long currentPosition = this.Position;
 
-            this.Position = currentPosition;
+                for (int i = 0; i < length; i++)
+                {
+                    unlockedPutByte(bytes[i]); // Wow I'm lazy...
+                }
+
+                //this.Position = currentPosition;
+            }
         }
+
     }
 }

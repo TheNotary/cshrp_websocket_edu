@@ -54,5 +54,19 @@ namespace WebsocketEdu
             readLog = new MemoryStream();
         }
 
+        /* I don't think this needs implementation outside of the tests
+         * */
+        public string GetWritesAsString()
+        {
+            throw new NotImplementedException();
+        }
+
+        /* Not sure if this is needed in the code...
+         * */
+        public byte[] ToArray()
+        {
+            throw new NotSupportedException();
+        }
+
     }
 }

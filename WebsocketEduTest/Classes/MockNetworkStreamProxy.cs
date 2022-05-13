@@ -31,11 +31,7 @@ namespace WebsocketEduTest
 
         public MockNetworkStreamProxy(string testString)
         {
-            _feedableMemoryStream = new FeedableMemoryStream();
-            byte[] buffer = Encoding.ASCII.GetBytes(testString);
-            _feedableMemoryStream.Write(buffer, 0, buffer.Length);
-            _feedableMemoryStream.Seek(0, SeekOrigin.Begin);
-
+            _feedableMemoryStream = new FeedableMemoryStream(testString);
             _stream = _feedableMemoryStream;
             _writeStream = new MemoryStream();
             readLog = new MemoryStream();
@@ -115,6 +111,14 @@ namespace WebsocketEduTest
         {
             _feedableMemoryStream.PutBytes(bytes, 0, bytes.Length);
         }
+
+        /* Converts the internal _feedableMemoryStream ToArray.  
+         * */
+        public byte[] ToArray()
+        {
+            return _feedableMemoryStream.ToArray();
+        }
+
 
     }
 }

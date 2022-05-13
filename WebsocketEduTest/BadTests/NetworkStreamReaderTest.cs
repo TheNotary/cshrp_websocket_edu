@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using WebsocketEdu;
 using Xunit;
+using FluentAssertions;
 
 namespace WebsocketEduTest
 {
@@ -19,7 +16,8 @@ namespace WebsocketEduTest
             // Given
             string firstLine = "GET / HTTP/1.1";
             string testHttpRequest = $"{firstLine}\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(testHttpRequest));
+            MockNetworkStreamProxy networkStreamProxy = 
+                new MockNetworkStreamProxy(new FeedableMemoryStream(testHttpRequest));
             NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
             // When
@@ -37,7 +35,7 @@ namespace WebsocketEduTest
             byte[] eolBytes = Encoding.UTF8.GetBytes("\r\n");
 
             MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(firstLine));
+                new MockNetworkStreamProxy(new FeedableMemoryStream(firstLine));
 
             // When
             Thread t = new Thread(new ParameterizedThreadStart(ReadNetworkStreamInThreadAndEchoToWriteStream));
@@ -63,15 +61,25 @@ namespace WebsocketEduTest
             networkStreamProxy.Write(lineBytes, 0, lineBytes.Length);
         }
 
-        private FeedableMemoryStream CreateStreamWithTestStringFeedable(string testString)
+
+        [Fact]
+        public void ItDoesntSetTheStreamPositionToTheVeryEndJustBecauseItReadsUntilCarriageReturn()
         {
-            FeedableMemoryStream stream = new FeedableMemoryStream();
+            // Given
+            string testData = "line 1\r\n";
+            testData += "line 2\r\n";
+            testData += "line 3\r\n";
+            testData += "line 4\r\n";
 
-            byte[] buffer = Encoding.ASCII.GetBytes(testString);
-            stream.Write(buffer, 0, buffer.Length);
-            stream.Seek(0, SeekOrigin.Begin);
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(new FeedableMemoryStream(testData));
+            NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
-            return stream;
+            // When
+            string firstLineRead = nsr.ReadUntilCarriageReturn();
+
+            // Then
+            firstLineRead.Should().Be("line 1");
+            networkStreamProxy.Stream.Position.Should().Be(8);
         }
     }
 }

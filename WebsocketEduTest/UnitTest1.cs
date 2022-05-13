@@ -5,6 +5,7 @@ using System.Text;
 using Xunit.Abstractions;
 using System.Threading;
 using System;
+using FluentAssertions;
 
 namespace WebsocketEduTest
 {
@@ -76,8 +77,8 @@ namespace WebsocketEduTest
         {
             //given
             MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(validHttpUpgradeRequest));
-            //validWebsocketHello
+                new MockNetworkStreamProxy(new FeedableMemoryStream(validHttpUpgradeRequest));
+
 
             Thread handleClientMessageThread =
                 new Thread(new ParameterizedThreadStart(PerformHandleClientMessage));
@@ -86,17 +87,13 @@ namespace WebsocketEduTest
             //var t = new Thread(() => { Console.WriteLine(i); });
             //t.Start();
             handleClientMessageThread.Start(new object[] { networkStreamProxy, 2 });
-            // FIXME: These PutBytes are overwriting the existing contest of the stream...
             networkStreamProxy.PutBytes(validWebsocketHello);
             networkStreamProxy.PutBytes(validWebsocketHello);
             handleClientMessageThread.Join();
 
             // then
             Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
-            Assert.Equal("z", networkStreamProxy.PrintBytesRecieved());
-
-
-
+            Assert.Equal("71 69 129 133 90 120 149 83 50 29 249 63 53 ", networkStreamProxy.PrintBytesRecieved());
         }
 
         /* Parameters:
@@ -153,13 +150,7 @@ namespace WebsocketEduTest
 
         private FeedableMemoryStream CreateStreamWithTestStringFeedable(string testString)
         {
-            FeedableMemoryStream stream = new FeedableMemoryStream();
-
-            byte[] buffer = Encoding.ASCII.GetBytes(testString);
-            stream.Write(buffer, 0, buffer.Length);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            return stream;
+            return new FeedableMemoryStream(testString);
         }
     }
-}
+}                                                            

@@ -2,7 +2,6 @@
 using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
-using System.Collections.Generic;
 
 // Todo:
 // - Make it so the NetworkStreamProxy writes all reads into it's own secret buffer that can be printed for debug purposes
@@ -126,7 +125,8 @@ namespace WebsocketEdu
             
             byte[] mask = isMasked ? readMask(headerBytes, stream) : new byte[0];
 
-            if (messageLength == 0) { 
+            if (messageLength == 0) 
+            {
                 Console.WriteLine("msglen == 0");
             }
 
@@ -143,7 +143,6 @@ namespace WebsocketEdu
                 }
                 if (opcode == 0x08) // close message
                 {
-
                     byte[] closeCode = payloadLength != 0 
                         ? decoded.Reverse().ToArray() 
                         : new byte[0];

@@ -49,6 +49,7 @@ namespace WebsocketEdu
         {
             long originalPosition = _stream.Position;
             int nextRead = _reader.Read();
+            if (nextRead == -1) return -1;
             _stream.Position = originalPosition + 1; // This will break on non-ascii my dude...
             return nextRead;
         }

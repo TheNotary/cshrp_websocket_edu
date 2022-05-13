@@ -10,7 +10,7 @@ namespace WebsocketEduTest
         long writePosition;
         public FeedableMemoryStream() : base()
         {
-            throw new NotImplementedException();  // this like... doesn't work right, always pass in a string I guess........ :(
+            writePosition = 0;
         }
 
         public FeedableMemoryStream(string initialStreamContents)

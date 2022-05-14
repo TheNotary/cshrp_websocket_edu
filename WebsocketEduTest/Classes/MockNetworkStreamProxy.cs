@@ -87,12 +87,5 @@ namespace WebsocketEduTest
         {
             _networkStream.PutBytes(bytes, 0, bytes.Length);
         }
-
-        public override void ClearDebugBuffer()
-        {
-            ReadLog.Close();
-            ReadLog = new MemoryStream();
-        }
-
     }
 }

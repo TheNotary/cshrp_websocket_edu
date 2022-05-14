@@ -34,8 +34,13 @@ namespace WebsocketEdu
         {
             WriteStream.WriteByte(value);
         }
-        public abstract void ClearDebugBuffer();
+        public void ClearDebugBuffer()
+        {
+            ReadLog.Close();
+            ReadLog = new MemoryStream();
+        }
         public abstract string GetWritesAsString();
+
         public abstract string PrintBytesRecieved();
     }
 }

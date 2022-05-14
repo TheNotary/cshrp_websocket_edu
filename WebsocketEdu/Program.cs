@@ -88,16 +88,15 @@ namespace WebsocketEdu
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("  << Exception encountered, closing client :p >>" + "\r\n" + ex.Message);
+                    Console.WriteLine("Bytes in Frame were:\r\n" + networkStream.PrintBytesRecieved());
+                    Console.WriteLine("  << Exception encountered, closing client :p >>\r\n" + ex.Message);
                     networkStream.Stream.Close();
                     tcpClient.Close();
                     tcpClient.Dispose();
                     break;
                 }
+                Console.WriteLine("Bytes in Frame were:\r\n" + networkStream.PrintBytesRecieved());
 
-                Console.WriteLine("Bytes in Frame were:" +
-                                  "\r\n" + networkStream.PrintBytesRecieved());
-                
                 networkStream.ClearDebugBuffer();
             }
         }

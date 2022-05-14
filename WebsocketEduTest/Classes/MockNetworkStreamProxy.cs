@@ -66,8 +66,6 @@ namespace WebsocketEduTest
             throw new NotImplementedException();
         }
 
-        /* No need to implement since the bytes read are already known to the parent test
-         * */
         public string PrintBytesRecieved()
         {
             StringBuilder sb = new StringBuilder();  // TODO: Abstract class...
@@ -77,6 +75,11 @@ namespace WebsocketEduTest
                 sb.Append(bytes[i].ToString() + " ");
             }
             return sb.ToString();
+        }
+
+        public byte[] GetBytesRecieved()
+        {
+            return readLog.ToArray();
         }
 
         public void Read(byte[] buffer, int offset, int count)

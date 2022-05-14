@@ -47,10 +47,12 @@ namespace WebsocketEdu
          * */
         private int Read()
         {
-            long originalPosition = _stream.Position;
+            long originalPosition = _stream.CanSeek ? _stream.Position : -1;
             int nextRead = _reader.Read();
             if (nextRead == -1) return -1;
-            _stream.Position = originalPosition + 1; // This will break on non-ascii my dude...
+
+            if (_stream.CanSeek)
+                _stream.Position = originalPosition + 1; // This will break on non-ascii my dude...
             return nextRead;
         }
     }

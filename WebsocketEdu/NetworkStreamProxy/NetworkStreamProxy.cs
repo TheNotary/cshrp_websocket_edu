@@ -1,19 +1,27 @@
 ﻿using System.Net.Sockets;
 using System.Text;
 
+
+
 namespace WebsocketEdu
 {
     public class NetworkStreamProxy : INetworkStream
     {
-        private MemoryStream readLog;
         private readonly NetworkStream _networkStream;
-        public bool DataAvailable => _networkStream.DataAvailable;
-        public Stream Stream => (Stream) _networkStream;
+        private MemoryStream readLog;
+        private readonly MemoryStream _writeStream;
+
+
         public NetworkStreamProxy(NetworkStream networkStream)
         {
             _networkStream = networkStream;
+            _writeStream = new MemoryStream();
             readLog = new MemoryStream();
         }
+
+        public bool DataAvailable => _networkStream.DataAvailable;
+        public Stream Stream => (Stream)_networkStream;
+
 
         public void Read(byte[] buffer, int offset, int count)
         {
@@ -54,18 +62,9 @@ namespace WebsocketEdu
             readLog = new MemoryStream();
         }
 
-        /* I don't think this needs implementation outside of the tests
-         * */
         public string GetWritesAsString()
         {
-            throw new NotImplementedException();
-        }
-
-        /* Not sure if this is needed in the code...
-         * */
-        public byte[] ToArray()
-        {
-            throw new NotSupportedException();
+            return Encoding.UTF8.GetString(_writeStream.ToArray());
         }
 
     }

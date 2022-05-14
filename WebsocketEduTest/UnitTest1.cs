@@ -111,8 +111,7 @@ namespace WebsocketEduTest
             // when
             handleHandshakeThread.Start(networkStreamProxy);
 
-            // Then
-            // this will block forever
+            // then
             Thread.Sleep(100);
             networkStreamProxy.PutBytes(Encoding.UTF8.GetBytes(secondPartOfHandshake));
             handleHandshakeThread.Join();

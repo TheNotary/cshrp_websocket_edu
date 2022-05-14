@@ -79,7 +79,7 @@ namespace WebsocketEduTest
 
             // Then
             firstLineRead.Should().Be("line 1");
-            networkStreamProxy.Stream.Position.Should().Be(8);
+            networkStreamProxy.SourceStream.Position.Should().Be(8);
         }
     }
 }

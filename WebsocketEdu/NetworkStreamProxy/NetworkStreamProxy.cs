@@ -8,7 +8,7 @@ namespace WebsocketEdu
     public class NetworkStreamProxy : INetworkStream
     {
         private readonly NetworkStream _networkStream;
-        private MemoryStream readLog;
+        private MemoryStream _readLog;
         private readonly MemoryStream _writeStream;
 
 
@@ -16,23 +16,23 @@ namespace WebsocketEdu
         {
             _networkStream = networkStream;
             _writeStream = new MemoryStream();
-            readLog = new MemoryStream();
+            _readLog = new MemoryStream();
         }
 
         public bool DataAvailable => _networkStream.DataAvailable;
-        public Stream Stream => (Stream)_networkStream;
+        public Stream SourceStream => (Stream)_networkStream;
 
 
         public void Read(byte[] buffer, int offset, int count)
         {
-            _networkStream.Read(buffer, offset, count);
-            readLog.Write(buffer, offset, count);
+            SourceStream.Read(buffer, offset, count);
+            _readLog.Write(buffer, offset, count);
         }
 
         public int ReadByte()
         {
             int newByte = (int) _networkStream.ReadByte();
-            readLog.WriteByte((byte) newByte);
+            _readLog.WriteByte((byte) newByte);
             return newByte;
         }
 
@@ -49,7 +49,7 @@ namespace WebsocketEdu
         public string PrintBytesRecieved()
         {
             StringBuilder sb = new StringBuilder();
-            byte[] bytes = readLog.ToArray();
+            byte[] bytes = _readLog.ToArray();
             for (int i = 0; i < bytes.Length; i++) {
                 sb.Append(bytes[i].ToString() + " ");
             }
@@ -58,8 +58,8 @@ namespace WebsocketEdu
 
         public void ClearDebugBuffer()
         {
-            readLog.Close();
-            readLog = new MemoryStream();
+            _readLog.Close();
+            _readLog = new MemoryStream();
         }
 
         public string GetWritesAsString()

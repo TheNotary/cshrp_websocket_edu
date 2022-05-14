@@ -76,8 +76,7 @@ namespace WebsocketEduTest
         public void ItHandlesHandshakesMessagesAndClosesCorrectly()
         {
             // given
-            MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(new FeedableMemoryStream(validHttpUpgradeRequest));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validHttpUpgradeRequest);
 
             // when
             var t = new Thread(() => {

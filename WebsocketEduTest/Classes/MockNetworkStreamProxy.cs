@@ -5,10 +5,10 @@ using WebsocketEdu;
 
 namespace WebsocketEduTest
 {
-    public class MockNetworkStreamProxy : INetworkStream
+    public class MockNetworkStreamProxy : AbstractNetworkStreamProxy
     {
         private readonly FeedableMemoryStream _networkStream;
-        private MemoryStream readLog;
+        private MemoryStream _readLog;
         private readonly MemoryStream _writeStream;
         
 
@@ -16,57 +16,48 @@ namespace WebsocketEduTest
         {
             _networkStream = fms;
             _writeStream = new MemoryStream();
-            readLog = new MemoryStream();
+            _readLog = new MemoryStream();
         }
         public MockNetworkStreamProxy()
         {
             _networkStream = new FeedableMemoryStream();
             _writeStream = new MemoryStream();
-            readLog = new MemoryStream();
+            _readLog = new MemoryStream();
         }
 
         public MockNetworkStreamProxy(string testString)
         {
             _networkStream = new FeedableMemoryStream(testString);
             _writeStream = new MemoryStream();
-            readLog = new MemoryStream();
+            _readLog = new MemoryStream();
         }
 
-        public bool DataAvailable
+        public override bool DataAvailable
         {
             get
             { // FIXME: check for off by one
-                return _networkStream.Position < _networkStream.Length;
+                return SourceStream.Position < SourceStream.Length;
             }
         }
-        public Stream Stream => (Stream)_networkStream;
 
-        public void Read(byte[] buffer, int offset, int count)
+        public override Stream SourceStream => (Stream)_networkStream;
+        public override Stream WriteStream => (Stream)_writeStream;
+        public override MemoryStream ReadLog
         {
-            _networkStream.Read(buffer, offset, count);
-            readLog.Write(buffer, offset, count);
+            get
+            {
+                return _readLog;
+            }
+            set
+            {
+                _readLog = value;
+            }
         }
 
-        public int ReadByte()
-        {
-            int thisByte = _networkStream.ReadByte();
-            readLog.WriteByte((byte)thisByte);
-            return thisByte;
-        }
-
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            _writeStream.Write(buffer, offset, count);
-        }
-        public void WriteByte(byte value)
-        {
-            _writeStream.WriteByte(value);
-        }
-
-        public string PrintBytesRecieved()
+        public override string PrintBytesRecieved()
         {
             StringBuilder sb = new StringBuilder();  // TODO: Abstract class...
-            byte[] bytes = readLog.ToArray();
+            byte[] bytes = ReadLog.ToArray();
             for (int i = 0; i < bytes.Length; i++)
             {
                 sb.Append(bytes[i].ToString() + " ");
@@ -74,23 +65,17 @@ namespace WebsocketEduTest
             return sb.ToString();
         }
 
-        public void ClearDebugBuffer()
-        {
-            readLog.Close();
-            readLog = new MemoryStream();
-        }
-
         /* This message return, as a string, all the characters that were written to the _writeStream 
          * which simulates what this client would have written to the tcp stream.
          * */
-        public string GetWritesAsString()
+        public override string GetWritesAsString()
         {
             return Encoding.UTF8.GetString(_writeStream.ToArray());
         }
 
         public byte[] GetBytesRecieved()
         {
-            return readLog.ToArray();
+            return ReadLog.ToArray();
         }
 
         public void PutByte(byte value)
@@ -101,6 +86,12 @@ namespace WebsocketEduTest
         public void PutBytes(byte[] bytes)
         {
             _networkStream.PutBytes(bytes, 0, bytes.Length);
+        }
+
+        public override void ClearDebugBuffer()
+        {
+            ReadLog.Close();
+            ReadLog = new MemoryStream();
         }
 
     }

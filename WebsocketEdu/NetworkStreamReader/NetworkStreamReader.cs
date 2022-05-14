@@ -10,7 +10,7 @@ namespace WebsocketEdu
 
         public NetworkStreamReader(INetworkStream stream)
         {
-            _stream = stream.Stream;
+            _stream = stream.SourceStream;
             _reader = new StreamReader(_stream);
         }
 

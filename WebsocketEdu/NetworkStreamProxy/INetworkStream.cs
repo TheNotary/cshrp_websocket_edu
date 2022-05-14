@@ -3,7 +3,7 @@
     public interface INetworkStream
     {
         bool DataAvailable { get; }
-        Stream Stream { get; }
+        Stream SourceStream { get; }
         int ReadByte();
         void WriteByte(byte value);
         void Read(byte[] buffer, int offset, int count);

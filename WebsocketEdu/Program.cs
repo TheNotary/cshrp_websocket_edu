@@ -90,7 +90,7 @@ namespace WebsocketEdu
                 {
                     Console.WriteLine("Bytes in Frame were:\r\n" + networkStream.PrintBytesRecieved());
                     Console.WriteLine("  << Exception encountered, closing client :p >>\r\n" + ex.Message);
-                    networkStream.Stream.Close();
+                    networkStream.SourceStream.Close();
                     tcpClient.Close();
                     tcpClient.Dispose();
                     break;

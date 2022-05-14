@@ -3,14 +3,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
 
-// Todo:
-// - Make it so the NetworkStreamProxy writes all reads into it's own secret buffer that can be printed for debug purposes
-
 namespace WebsocketEdu
 {
-    /*
-     * This application is a basic example of a working websocket server implementation.  
-     * */
+    /// <summary>
+    /// This application is a basic example of a working websocket server implementation.  
+    /// </summary>
     public class WebsocketExample
     {
         private static int threadPoolSize = 1;
@@ -65,7 +62,6 @@ namespace WebsocketEdu
             if (server == null)
                 throw new ArgumentNullException(nameof(server));
 
-            // This could be it's own thread while thread pool !full
             TcpClient tcpClient = ((TcpListener) server).AcceptTcpClient();
             string remoteIp = tcpClient.Client.RemoteEndPoint.ToString();
             Console.WriteLine("A client connected from {0}", remoteIp);
@@ -76,10 +72,10 @@ namespace WebsocketEdu
             {
                 while (!networkStream.DataAvailable) ; // block here till we have data
 
-                // 1.
                 // wait for the first 2 bytes to be available.  Websocket messages consist of a two byte header detailing 
                 // the shape of the incoming websocket frame...
                 while (tcpClient.Available < 2) ;
+
                 Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
 
                 try

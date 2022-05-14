@@ -7,6 +7,7 @@ ref:  parsing a UTF-8 byte stream, https://developpaper.com/c-the-correct-way-to
 
 ## TODO
 
-- Dry up the code between NetworkStreamProxy and MockNetworkStreamProxy with an abstract class
+x Dry up the code between NetworkStreamProxy and MockNetworkStreamProxy with an abstract class
 - Look into a better implementation of the websocket server, streams blow
 - Make it so the webserver can have two clients communicate to eachother
+- Create an object just for WebSocketClient

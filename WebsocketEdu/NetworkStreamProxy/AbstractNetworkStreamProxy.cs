@@ -14,8 +14,9 @@ namespace WebsocketEdu
 
         public abstract bool DataAvailable { get; }
         public abstract Stream SourceStream { get; }
-        public abstract MemoryStream WriteStream { get; }
+        public abstract Stream WriteStream { get; }
         public abstract MemoryStream ReadLog { get; set; }
+        public abstract string GetWritesAsString();
         public void Read(byte[] buffer, int offset, int count)
         {
             SourceStream.Read(buffer, offset, count);
@@ -50,14 +51,6 @@ namespace WebsocketEdu
                 sb.Append(bytes[i].ToString() + " ");
             }
             return sb.ToString();
-        }
-
-        /* This message return, as a string, all the characters that were written to the _writeStream 
-         * which simulates what this client would have written to the tcp stream.
-         * */
-        public string GetWritesAsString()
-        {
-            return Encoding.UTF8.GetString(WriteStream.ToArray());
         }
 
         public byte[] GetBytesRecieved()

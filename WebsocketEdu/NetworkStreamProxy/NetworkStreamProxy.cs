@@ -5,66 +5,38 @@ using System.Text;
 
 namespace WebsocketEdu
 {
-    public class NetworkStreamProxy : INetworkStream
+    public class NetworkStreamProxy : AbstractNetworkStreamProxy
     {
         private readonly NetworkStream _networkStream;
         private MemoryStream _readLog;
-        private readonly MemoryStream _writeStream;
-
+        //private readonly MemoryStream _writeStream;
 
         public NetworkStreamProxy(NetworkStream networkStream)
         {
             _networkStream = networkStream;
-            _writeStream = new MemoryStream();
+            //_writeStream = new MemoryStream();
             _readLog = new MemoryStream();
         }
 
-        public bool DataAvailable => _networkStream.DataAvailable;
-        public Stream SourceStream => (Stream)_networkStream;
+        public override bool DataAvailable => _networkStream.DataAvailable;
+        public override Stream SourceStream => (Stream)_networkStream;
+        public override Stream WriteStream => (Stream)_networkStream;
 
-
-        public void Read(byte[] buffer, int offset, int count)
+        public override MemoryStream ReadLog
         {
-            SourceStream.Read(buffer, offset, count);
-            _readLog.Write(buffer, offset, count);
-        }
-
-        public int ReadByte()
-        {
-            int newByte = (int) _networkStream.ReadByte();
-            _readLog.WriteByte((byte) newByte);
-            return newByte;
-        }
-
-        public void Write(byte[] buffer, int offset, int count)
-        {
-            _networkStream.Write(buffer, offset, count);
-        }
-
-        public void WriteByte(byte value)
-        {
-            _networkStream.WriteByte(value);
-        }
-
-        public string PrintBytesRecieved()
-        {
-            StringBuilder sb = new StringBuilder();
-            byte[] bytes = _readLog.ToArray();
-            for (int i = 0; i < bytes.Length; i++) {
-                sb.Append(bytes[i].ToString() + " ");
+            get
+            {
+                return _readLog;
             }
-            return sb.ToString();
+            set
+            {
+                _readLog = value;
+            }
         }
 
-        public void ClearDebugBuffer()
+        public override string GetWritesAsString()
         {
-            _readLog.Close();
-            _readLog = new MemoryStream();
-        }
-
-        public string GetWritesAsString()
-        {
-            return Encoding.UTF8.GetString(_writeStream.ToArray());
+            throw new NotImplementedException();
         }
 
     }

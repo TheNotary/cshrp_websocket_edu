@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace WebsocketEdu
@@ -13,7 +14,7 @@ namespace WebsocketEdu
 
         public abstract bool DataAvailable { get; }
         public abstract Stream SourceStream { get; }
-        public abstract Stream WriteStream { get; }
+        public abstract MemoryStream WriteStream { get; }
         public abstract MemoryStream ReadLog { get; set; }
         public void Read(byte[] buffer, int offset, int count)
         {
@@ -39,8 +40,29 @@ namespace WebsocketEdu
             ReadLog.Close();
             ReadLog = new MemoryStream();
         }
-        public abstract string GetWritesAsString();
 
-        public abstract string PrintBytesRecieved();
+        public string PrintBytesRecieved()
+        {
+            StringBuilder sb = new StringBuilder();
+            byte[] bytes = ReadLog.ToArray();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                sb.Append(bytes[i].ToString() + " ");
+            }
+            return sb.ToString();
+        }
+
+        /* This message return, as a string, all the characters that were written to the _writeStream 
+         * which simulates what this client would have written to the tcp stream.
+         * */
+        public string GetWritesAsString()
+        {
+            return Encoding.UTF8.GetString(WriteStream.ToArray());
+        }
+
+        public byte[] GetBytesRecieved()
+        {
+            return ReadLog.ToArray();
+        }
     }
 }

@@ -41,7 +41,7 @@ namespace WebsocketEduTest
         }
 
         public override Stream SourceStream => (Stream)_networkStream;
-        public override Stream WriteStream => (Stream)_writeStream;
+        public override MemoryStream WriteStream => _writeStream;
         public override MemoryStream ReadLog
         {
             get
@@ -52,30 +52,6 @@ namespace WebsocketEduTest
             {
                 _readLog = value;
             }
-        }
-
-        public override string PrintBytesRecieved()
-        {
-            StringBuilder sb = new StringBuilder();  // TODO: Abstract class...
-            byte[] bytes = ReadLog.ToArray();
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                sb.Append(bytes[i].ToString() + " ");
-            }
-            return sb.ToString();
-        }
-
-        /* This message return, as a string, all the characters that were written to the _writeStream 
-         * which simulates what this client would have written to the tcp stream.
-         * */
-        public override string GetWritesAsString()
-        {
-            return Encoding.UTF8.GetString(_writeStream.ToArray());
-        }
-
-        public byte[] GetBytesRecieved()
-        {
-            return ReadLog.ToArray();
         }
 
         public void PutByte(byte value)

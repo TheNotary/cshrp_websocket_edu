@@ -29,7 +29,7 @@ namespace WebsocketEduTest
             // Given
             string expectedWebsocketHeader = "websocketblah";
             string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {expectedWebsocketHeader}\r\n\r\n";
-            MockNetworkStreamProxy stream = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(testHttpRequest));
+            MockNetworkStreamProxy stream = new MockNetworkStreamProxy(testHttpRequest);
             NetworkStreamReader sr = new NetworkStreamReader(stream);
 
             // When
@@ -62,7 +62,7 @@ namespace WebsocketEduTest
         public void ItImmediatelyReturnsFalseIfTheStreamIsWebsocketData()
         {
             string data = "i don't start with the word GET";
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(data));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(data);
 
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, 2);
@@ -101,8 +101,7 @@ namespace WebsocketEduTest
             // given
             string firstPartOfHandshake = validHttpUpgradeRequest.Substring(0, 3);
             string secondPartOfHandshake = validHttpUpgradeRequest.Substring(3);
-            MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(CreateStreamWithTestStringFeedable(firstPartOfHandshake));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(firstPartOfHandshake);
 
             Thread handleHandshakeThread = 
                 new Thread(new ParameterizedThreadStart(PerformHandleHandshakeInThread));
@@ -129,9 +128,5 @@ namespace WebsocketEduTest
             WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
         }
 
-        private FeedableMemoryStream CreateStreamWithTestStringFeedable(string testString)
-        {
-            return new FeedableMemoryStream(testString);
-        }
     }
 }                                                            

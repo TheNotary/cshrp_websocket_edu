@@ -9,15 +9,13 @@ namespace WebsocketEduTest
 {
     public class NetworkStreamReaderTest
     {
-
         [Fact]
         public void ItCanReadALineFromTheStreamAtATime()
         {
             // Given
             string firstLine = "GET / HTTP/1.1";
             string testHttpRequest = $"{firstLine}\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
-            MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(new FeedableMemoryStream(testHttpRequest));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(testHttpRequest);
             NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
             // When
@@ -34,8 +32,7 @@ namespace WebsocketEduTest
             string firstLine = "GET / HTTP/1.1";
             byte[] eolBytes = Encoding.UTF8.GetBytes("\r\n");
 
-            MockNetworkStreamProxy networkStreamProxy = 
-                new MockNetworkStreamProxy(new FeedableMemoryStream(firstLine));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(firstLine);
 
             // When
             Thread t = new Thread(new ParameterizedThreadStart(ReadNetworkStreamInThreadAndEchoToWriteStream));
@@ -71,7 +68,7 @@ namespace WebsocketEduTest
             testData += "line 3\r\n";
             testData += "line 4\r\n";
 
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(new FeedableMemoryStream(testData));
+            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(testData);
             NetworkStreamReader nsr = new NetworkStreamReader(networkStreamProxy);
 
             // When

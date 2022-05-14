@@ -8,51 +8,18 @@ namespace WebsocketEduTest
     public class MockNetworkStreamProxy : AbstractNetworkStreamProxy
     {
         private readonly FeedableMemoryStream _networkStream;
-        private MemoryStream _readLog;
         private readonly MemoryStream _writeStream;
         
-
-        public MockNetworkStreamProxy(FeedableMemoryStream fms)
-        {
-            _networkStream = fms;
-            _writeStream = new MemoryStream();
-            _readLog = new MemoryStream();
-        }
-        public MockNetworkStreamProxy()
-        {
-            _networkStream = new FeedableMemoryStream();
-            _writeStream = new MemoryStream();
-            _readLog = new MemoryStream();
-        }
-
         public MockNetworkStreamProxy(string testString)
         {
             _networkStream = new FeedableMemoryStream(testString);
             _writeStream = new MemoryStream();
-            _readLog = new MemoryStream();
         }
 
-        public override bool DataAvailable
-        {
-            get
-            { // FIXME: check for off by one
-                return SourceStream.Position < SourceStream.Length;
-            }
-        }
-
+        public override bool DataAvailable => IsDataAvailable();
         public override Stream SourceStream => (Stream)_networkStream;
         public override Stream WriteStream => (Stream)_writeStream;
-        public override MemoryStream ReadLog
-        {
-            get
-            {
-                return _readLog;
-            }
-            set
-            {
-                _readLog = value;
-            }
-        }
+        public override MemoryStream ReadLog { get; set; } = new MemoryStream();
 
         public void PutByte(byte value)
         {
@@ -70,6 +37,12 @@ namespace WebsocketEduTest
         public override string GetWritesAsString()
         {
             return Encoding.UTF8.GetString(_writeStream.ToArray());
+        }
+
+        // FIXME: check for off by one
+        public bool IsDataAvailable()
+        {
+            return SourceStream.Position < SourceStream.Length;
         }
     }
 }

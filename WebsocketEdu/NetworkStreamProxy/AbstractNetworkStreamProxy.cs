@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace WebsocketEdu
 {
+    /// <summary>
+    /// This class wraps the NetworkStream class allowing us to write
+    /// tests and also keep track of helpful debug information in
+    /// production.
+    /// </summary>
     public abstract class AbstractNetworkStreamProxy : INetworkStream
     {
         private readonly NetworkStream? _networkStream;

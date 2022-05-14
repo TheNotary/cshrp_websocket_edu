@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Usage:  using WebsocketEduTest.Extensions;
 namespace WebsocketEduTest.Extensions
 {
     public static class Extensions

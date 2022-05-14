@@ -13,7 +13,7 @@ namespace WebsocketEduTest
     {
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
-        byte[] validClientClose = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
+        byte[] validClientClose = new byte[] { 136, 130, 104, 40, 78, 91, 107, 193 };
         string validHandshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
 
         private readonly ITestOutputHelper output;
@@ -75,42 +75,25 @@ namespace WebsocketEduTest
         [Fact]
         public void ItHandlesHandshakesMessagesAndClosesCorrectly()
         {
-            //given
+            // given
             MockNetworkStreamProxy networkStreamProxy = 
                 new MockNetworkStreamProxy(new FeedableMemoryStream(validHttpUpgradeRequest));
 
-
-            Thread handleClientMessageThread =
-                new Thread(new ParameterizedThreadStart(PerformHandleClientMessage));
-
             // when
-            //var t = new Thread(() => { Console.WriteLine(i); });
-            //t.Start();
-            handleClientMessageThread.Start(new object[] { networkStreamProxy, 2 });
+            var t = new Thread(() => {
+                for (int i = 0; i < 3; i++)
+                {
+                    WebsocketExample.HandleClientMessage(networkStreamProxy);
+                }
+            }); t.Start();
             networkStreamProxy.PutBytes(validWebsocketHello);
-            networkStreamProxy.PutBytes(validWebsocketHello);
-            handleClientMessageThread.Join();
+            networkStreamProxy.PutBytes(validClientClose);
+            t.Join();
 
             // then
             Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
-            Assert.Equal("71 69 129 133 90 120 149 83 50 29 249 63 53 ", networkStreamProxy.PrintBytesRecieved());
-        }
-
-        /* Parameters:
-         *   - INetworkStream stream - Network stream to read from and write to throughout testing
-         *   - int times - Number of times to call HandleClientMessage
-         * */
-        private void PerformHandleClientMessage(object? obj)
-        {
-            if (obj == null) throw new ArgumentNullException(nameof(obj));
-            object[] array = (object[]) obj;
-            INetworkStream stream = (INetworkStream)array[0];
-            int times = (int)array[1];
-
-            for(int i = 0; i < times; i++)
-            {
-                WebsocketExample.HandleClientMessage(stream);
-            }
+            validWebsocketHello.Should().BeSubsetOf(networkStreamProxy.GetBytesRecieved());
+            validClientClose.Should().BeSubsetOf(networkStreamProxy.GetBytesRecieved());
         }
 
         [Fact]

@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WebsocketEdu
+namespace WebsocketEduTest
 {
     /// <summary>
     /// This class wraps the NetworkStream class allowing us to write

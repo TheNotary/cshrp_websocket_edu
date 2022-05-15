@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
-using WebsocketEdu;
+using WebsocketEduTest;
 using Xunit;
 using FluentAssertions;
 

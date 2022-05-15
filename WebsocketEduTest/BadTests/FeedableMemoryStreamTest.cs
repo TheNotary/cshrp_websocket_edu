@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading;
 using Xunit;
 using FluentAssertions;
-using WebsocketEdu;
+using WebsocketEduTest;
 
 namespace WebsocketEduTest
 {

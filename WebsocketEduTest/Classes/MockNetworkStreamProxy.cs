@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using WebsocketEdu;
+using WebsocketEduTest;
 
 namespace WebsocketEduTest
 {
@@ -13,6 +13,11 @@ namespace WebsocketEduTest
         public MockNetworkStreamProxy(string testString)
         {
             _networkStream = new FeedableMemoryStream(testString);
+            _writeStream = new MemoryStream();
+        }
+        public MockNetworkStreamProxy(byte[] testBytes)
+        {
+            _networkStream = new FeedableMemoryStream(testBytes);
             _writeStream = new MemoryStream();
         }
 

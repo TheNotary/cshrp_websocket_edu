@@ -3,7 +3,7 @@ using System.Text;
 
 
 
-namespace WebsocketEdu
+namespace WebsocketEduTest
 {
     public class NetworkStreamProxy : AbstractNetworkStreamProxy
     {

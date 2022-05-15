@@ -1,4 +1,4 @@
-﻿namespace WebsocketEdu
+﻿namespace WebsocketEduTest
 {
     public interface INetworkStreamReader
     {

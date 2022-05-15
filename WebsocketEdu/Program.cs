@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
 
-namespace WebsocketEdu
+namespace WebsocketEduTest
 {
     /// <summary>
     /// This application is a basic example of a working websocket server implementation.  
@@ -82,6 +82,15 @@ namespace WebsocketEdu
                 {
                     HandleClientMessage(networkStream);
                 }
+                catch (ClientClosedConnectionException ex)
+                {
+                    Console.WriteLine("Bytes in Frame were:\r\n" + networkStream.PrintBytesRecieved());
+                    Console.WriteLine("  << Client Sent Close, dropping Stream >>\r\n" + ex.Message);
+                    networkStream.SourceStream.Close();
+                    tcpClient.Close();
+                    tcpClient.Dispose();
+                    break;
+                }
                 catch (Exception ex)
                 {
                     Console.WriteLine("Bytes in Frame were:\r\n" + networkStream.PrintBytesRecieved());
@@ -107,6 +116,32 @@ namespace WebsocketEdu
 
             // Handle ordinary websocket communication
             HandleWebsocketMessage(networkStream, headerBytes);
+        }
+
+        public void NewHandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
+        {
+            var websocketReader = new WebsocketReader(stream, headerBytes);
+            WebsocketFrame websocketFrame = websocketReader.ConsumeFrameFromStream();
+
+            if (!websocketFrame.isMasked)
+            {
+                throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
+            }
+
+            switch (websocketFrame.opcode)
+            {
+                case (0x01):  // text message
+                    Console.WriteLine("> Client: {0}", websocketFrame.decodedPayload);
+                    break;
+                case (0x08):  // close message
+                    byte[] response = BuildCloseFrame(websocketFrame.decodedPayload);
+                    stream.Write(response, 0, response.Length);
+                    string closeCodeString = websocketFrame.closeCode != 0
+                        ? "Close frame code was " + websocketFrame.closeCode
+                        : "There was no close code.";
+                    throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
+            }
+
         }
 
         static void HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
@@ -150,14 +185,14 @@ namespace WebsocketEdu
 
 
                     stream.Write(response, 0, response.Length);
-                    throw new Exception("The client sent a close frame.  " + closeCodeString);
+                    throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
                 }
             }
             else
             {
                 byte[] clearText = new byte[messageLength];
                 stream.Read(clearText, 0, clearText.Length);
-                throw new Exception("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
+                throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
             }
 
         }

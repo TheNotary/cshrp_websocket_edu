@@ -15,6 +15,18 @@ namespace WebsocketEduTest.Extensions
             Array.Copy(array, offset, result, 0, length);
             return result;
         }
+        public static T[] SubArray<T>(this T[] array, int offset)
+        {
+            int length = array.Length - offset;
+            T[] result = new T[length];
+            Array.Copy(array, offset, result, 0, length);
+            return result;
+        }
+
+        public static byte[] ToBytes(this string meh)
+        {
+            return Encoding.UTF8.GetBytes(meh);
+        }
     }
 
 }

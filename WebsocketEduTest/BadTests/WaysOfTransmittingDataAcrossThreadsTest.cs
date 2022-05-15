@@ -1,5 +1,5 @@
 using Xunit;
-using WebsocketEdu;
+using WebsocketEduTest;
 using System.IO;
 using System.Text;
 using System.Net.Sockets;

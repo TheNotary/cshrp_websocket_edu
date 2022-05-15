@@ -1,5 +1,5 @@
 using Xunit;
-using WebsocketEdu;
+using WebsocketEduTest;
 using System.IO;
 using System.Text;
 using Xunit.Abstractions;
@@ -80,17 +80,16 @@ namespace WebsocketEduTest
 
             // when
             var t = new Thread(() => {
-                for (int i = 0; i < 3; i++)
-                {
-                    WebsocketExample.HandleClientMessage(networkStreamProxy);
-                }
+                WebsocketExample.HandleClientMessage(networkStreamProxy);
+                WebsocketExample.HandleClientMessage(networkStreamProxy);
+                Assert.Throws<ClientClosedConnectionException>(() => WebsocketExample.HandleClientMessage(networkStreamProxy));
             }); t.Start();
             networkStreamProxy.PutBytes(validWebsocketHello);
             networkStreamProxy.PutBytes(validClientClose);
             t.Join();
 
             // then
-            Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
+            Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString().Substring(0, validHandshakeResponse.Length));
             validWebsocketHello.Should().BeSubsetOf(networkStreamProxy.GetBytesRecieved());
             validClientClose.Should().BeSubsetOf(networkStreamProxy.GetBytesRecieved());
         }

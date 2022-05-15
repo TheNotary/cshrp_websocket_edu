@@ -20,6 +20,12 @@ namespace WebsocketEduTest
             Seek(0, SeekOrigin.Begin);
             writePosition = buffer.Length;
         }
+        public FeedableMemoryStream(byte[] initialStreamContents)
+        {
+            Write(initialStreamContents, 0, initialStreamContents.Length);
+            Seek(0, SeekOrigin.Begin);
+            writePosition = initialStreamContents.Length;
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {

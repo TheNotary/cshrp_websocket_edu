@@ -118,7 +118,7 @@ namespace WebsocketEduTest
             HandleWebsocketMessage(networkStream, headerBytes);
         }
 
-        public void NewHandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
+        static public void HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
         {
             var websocketReader = new WebsocketReader(stream, headerBytes);
             WebsocketFrame websocketFrame = websocketReader.ConsumeFrameFromStream();
@@ -131,7 +131,7 @@ namespace WebsocketEduTest
             switch (websocketFrame.opcode)
             {
                 case (0x01):  // text message
-                    Console.WriteLine("> Client: {0}", websocketFrame.decodedPayload);
+                    Console.WriteLine("> Client: {0}", Encoding.UTF8.GetString(websocketFrame.decodedPayload));
                     break;
                 case (0x08):  // close message
                     byte[] response = BuildCloseFrame(websocketFrame.decodedPayload);
@@ -141,60 +141,6 @@ namespace WebsocketEduTest
                         : "There was no close code.";
                     throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
             }
-
-        }
-
-        static void HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
-        {
-            bool fin      = (headerBytes[0] & 0b10000000) != 0,
-                 isMasked = (headerBytes[1] & 0b10000000) != 0;  // must be true, "All messages from the client to the server have this bit set"
-            int opcode    =  headerBytes[0] & 0b00001111;        // expecting 0x01, indicating a text message
-
-            object[] result = determineMessageLength(headerBytes, stream);
-            ulong messageLength = (ulong) result[0];
-            
-            byte[] mask = isMasked ? readMask(headerBytes, stream) : new byte[0];
-
-            if (messageLength == 0) 
-            {
-                Console.WriteLine("msglen == 0");
-            }
-
-            if (isMasked)
-            {
-                ulong payloadLength = messageLength;
-                byte[] decoded = decodeMessage(stream, payloadLength, mask).ToArray();    // only has up to 65521 properly decoded, the rest are empty bytes...
-
-                if (opcode == 0x01) // text message
-                {
-                    string text = Encoding.UTF8.GetString(decoded);
-                    Console.WriteLine("> Client: {0}", text);
-                    return;
-                }
-                if (opcode == 0x08) // close message
-                {
-                    byte[] closeCode = payloadLength != 0 
-                        ? decoded.Reverse().ToArray() 
-                        : new byte[0];
-
-                    string closeCodeString = closeCode.Length > 0 
-                        ? "Close frame code was " + BitConverter.ToInt16(decoded.Reverse().ToArray(), 0).ToString()
-                        : "There was no close code.";
-
-                    byte[] response = BuildCloseFrame(decoded);
-
-
-                    stream.Write(response, 0, response.Length);
-                    throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
-                }
-            }
-            else
-            {
-                byte[] clearText = new byte[messageLength];
-                stream.Read(clearText, 0, clearText.Length);
-                throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
-            }
-
         }
 
         public static byte[] BuildCloseFrame(byte[] closeCodeBytes)
@@ -205,55 +151,6 @@ namespace WebsocketEduTest
             output.WriteByte(0x02);       // length of close payload being 2, this message isn't masked, they say there's no vulnerability to the server...
             output.Write(closeCodeBytes, 0, closeCodeBytes.Length);
             return output.ToArray();
-        }
-
-        /* This message assumes the stream cursor is already at the first byte of the mask key
-         */
-        public static byte[] readMask(byte[] headerBytes, INetworkStream stream)
-        {
-            byte[] maskingKey = new byte[4];
-
-            stream.Read(maskingKey, 0, 4);
-            return maskingKey;
-        }
-
-        static object[] determineMessageLength(Byte[] headerBytes, INetworkStream stream)
-        {
-            int msglen = headerBytes[1] & 0b01111111;
-            ulong msglen64 = (ulong) msglen;
-
-            if (msglen == 126) // 126 signifies an extended payload size of 16bits
-            {
-                byte[] balanceBytes = new byte[2];
-                stream.Read(balanceBytes, 0, balanceBytes.Length);
-
-                msglen64 = BitConverter.ToUInt16(new byte[] { balanceBytes[1], balanceBytes[0] });
-            }
-            if (msglen == 127)
-            {
-                byte[] balanceBytes = new byte[8];
-                stream.Read(balanceBytes, 0, balanceBytes.Length);
-
-                msglen64 = BitConverter.ToUInt64(new byte[] { balanceBytes[7], balanceBytes[6], balanceBytes[5], balanceBytes[4], balanceBytes[3], balanceBytes[2], balanceBytes[1], balanceBytes[0] });
-            }
-
-            Console.WriteLine("Payload length was: " + msglen64.ToString());
-
-            return new object[] { msglen64, 0 };
-        }
-
-        static MemoryStream decodeMessage(INetworkStream stream, ulong payloadLength, byte[] mask)
-        {
-            MemoryStream decodedStream = new MemoryStream();
-
-            for (ulong i = 0; i < payloadLength; i++)
-            {
-                byte maskI = (byte) mask[i % 4];
-                byte rawByte = (byte) stream.ReadByte();
-                byte decodedByte = (byte) (rawByte ^ maskI);  // 3 233  11 1110 1001
-                decodedStream.WriteByte(decodedByte);
-            }
-            return decodedStream;
         }
 
         public static bool HandleHandshake(INetworkStream stream, byte[] headerBytes)
@@ -336,7 +233,6 @@ namespace WebsocketEduTest
 
             return webSocketHeader;
         }
-
 
         static string GenerateResponseWebsocketHeaderValue(String inboundWebSocketKey)
         {

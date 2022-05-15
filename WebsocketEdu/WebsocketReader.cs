@@ -65,8 +65,6 @@ namespace WebsocketEduTest
 
                 if (frame.opcode == 0x01) // text message
                 {
-                    string text = Encoding.UTF8.GetString(frame.decodedPayload);
-                    Console.WriteLine("> Client: {0}", text);
                     return frame;
                 }
                 if (frame.opcode == 0x08) // close message
@@ -77,13 +75,7 @@ namespace WebsocketEduTest
                     frame.closeCodeReason = frame.payloadLength > 2
                         ? Encoding.UTF8.GetString(frame.decodedPayload.SubArray(2))
                         : "";
-
                     return frame;
-                    
-                    //byte[] response = BuildCloseFrame(decodedBody);
-
-                    //_stream.Write(response, 0, response.Length);
-                    //throw new Exception("The client sent a close frame.  " + closeCodeString);
                 }
                 throw new Exception("Unknown opcode sent from client, crashing connection");
             }
@@ -92,7 +84,6 @@ namespace WebsocketEduTest
                 byte[] clearText = new byte[frame.payloadLength];
                 _stream.Read(clearText, 0, clearText.Length);
                 return frame;
-                //throw new Exception("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
             }
 
         }

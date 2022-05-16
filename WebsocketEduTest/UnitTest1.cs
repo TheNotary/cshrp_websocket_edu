@@ -15,29 +15,6 @@ namespace WebsocketEduTest
         byte[] validClientClose = new byte[] { 136, 130, 104, 40, 78, 91, 107, 193 };
         string validHandshakeResponse = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
 
-        private readonly ITestOutputHelper output;
-
-        public UnitTest1(ITestOutputHelper output)
-        {
-            this.output = output;
-        }
-
-        [Fact]
-        public void ItReadsHttpUpgradeRequestsAndGetsTheWebsocketHeader()
-        {
-            // Given
-            string expectedWebsocketHeader = "websocketblah";
-            string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: {expectedWebsocketHeader}\r\n\r\n";
-            MockNetworkStreamProxy stream = new MockNetworkStreamProxy(testHttpRequest);
-            NetworkStreamReader sr = new NetworkStreamReader(stream);
-
-            // When
-            string websocketHeader = WebsocketExample.ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);
-
-            // Then
-            Assert.Equal(expectedWebsocketHeader, websocketHeader);
-        }
-
         [Fact]
         public void ItRespondsCorrectlyToAValidHandshake()
         {

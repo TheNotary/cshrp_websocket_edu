@@ -8,7 +8,7 @@ using WebsocketEdu;
 
 namespace WebsocketEduTest
 {
-    public class ProgramTest
+    public class TcpHandlerTest
     {
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
@@ -22,12 +22,11 @@ namespace WebsocketEduTest
             string expectedResponseWrites = "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: EJ5xejuUCHQkIKE2QxDTDCDws8Q=\r\n\r\n";
             string testHttpRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(testHttpRequest);
-
-            // When
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, 2);
 
-            bool result = WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
+            // When
+            bool result = TcpController.HandleHandshake(networkStreamProxy, headerBytes);
 
             // Then
             Assert.True(result);
@@ -43,7 +42,7 @@ namespace WebsocketEduTest
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, 2);
 
-            bool result = WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
+            bool result = TcpController.HandleHandshake(networkStreamProxy, headerBytes);
 
             Assert.False(result);
         }
@@ -56,9 +55,9 @@ namespace WebsocketEduTest
 
             // when
             var t = new Thread(() => {
-                WebsocketExample.HandleClientMessage(networkStreamProxy);
-                WebsocketExample.HandleClientMessage(networkStreamProxy);
-                Assert.Throws<ClientClosedConnectionException>(() => WebsocketExample.HandleClientMessage(networkStreamProxy));
+                TcpController.HandleClientMessage(networkStreamProxy);
+                TcpController.HandleClientMessage(networkStreamProxy);
+                Assert.Throws<ClientClosedConnectionException>(() => TcpController.HandleClientMessage(networkStreamProxy));
             }); t.Start();
             networkStreamProxy.PutBytes(validWebsocketHello);
             networkStreamProxy.PutBytes(validClientClose);
@@ -100,7 +99,7 @@ namespace WebsocketEduTest
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, 2);
 
-            WebsocketExample.HandleHandshake(networkStreamProxy, headerBytes);
+            TcpController.HandleHandshake(networkStreamProxy, headerBytes);
         }
 
     }

@@ -18,14 +18,9 @@ namespace WebsocketEdu
         static void Main(string[] args)
         {
             server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
-
             server.Start();
             Console.WriteLine("Server has started on 127.0.0.1:{0}.{1}Waiting for a connection...", port, Environment.NewLine);
-
             ThreadManagementLoop();
-
-            Console.WriteLine("Press 'q' to quit at any time.");
-            while (Console.Read() != 'q') ;
         }
 
         public static void ThreadManagementLoop()
@@ -63,7 +58,8 @@ namespace WebsocketEdu
                 throw new ArgumentNullException(nameof(server));
 
             TcpClient tcpClient = ((TcpListener) server).AcceptTcpClient();
-            string remoteIp = tcpClient.Client.RemoteEndPoint.ToString();
+            string remoteIp = GetRemoteIp(tcpClient);
+
             Console.WriteLine("A client connected from {0}", remoteIp);
             INetworkStream networkStream = new NetworkStreamProxy( tcpClient.GetStream() );
 
@@ -124,9 +120,7 @@ namespace WebsocketEdu
             WebsocketFrame websocketFrame = websocketReader.ConsumeFrameFromStream();
 
             if (!websocketFrame.isMasked)
-            {
                 throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
-            }
 
             switch (websocketFrame.opcode)
             {
@@ -160,11 +154,20 @@ namespace WebsocketEdu
         public static byte[] BuildCloseFrame(byte[] closeCodeBytes)
         {
             MemoryStream output = new MemoryStream();
-            //byte[] closeCodeBytes = BitConverter.GetBytes(closeCode);
             output.WriteByte(0b10001000); // opcode for a finished, closed frame
             output.WriteByte(0x02);       // length of close payload being 2, this message isn't masked, they say there's no vulnerability to the server...
             output.Write(closeCodeBytes, 0, closeCodeBytes.Length);
             return output.ToArray();
+        }
+
+        private static string GetRemoteIp(TcpClient tcpClient)
+        {
+            if (tcpClient == null || tcpClient.Client == null || tcpClient.Client.RemoteEndPoint == null || tcpClient.Client.RemoteEndPoint.ToString() == null)
+                return "NONE";
+            string? omg = tcpClient.Client.RemoteEndPoint.ToString();
+            if (omg == null)
+                return "NONE";
+            return omg;
         }
 
     }

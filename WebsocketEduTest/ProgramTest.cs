@@ -8,7 +8,7 @@ using WebsocketEdu;
 
 namespace WebsocketEduTest
 {
-    public class UnitTest1
+    public class ProgramTest
     {
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };

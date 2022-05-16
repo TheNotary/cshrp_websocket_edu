@@ -1,7 +1,7 @@
 ﻿using System.Text;
 
 
-namespace WebsocketEduTest
+namespace WebsocketEdu
 {
     public class NetworkStreamReader : INetworkStreamReader
     {

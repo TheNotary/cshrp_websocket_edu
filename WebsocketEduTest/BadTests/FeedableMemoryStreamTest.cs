@@ -4,6 +4,7 @@ using System.Threading;
 using Xunit;
 using FluentAssertions;
 using WebsocketEduTest;
+using WebsocketEdu;
 
 namespace WebsocketEduTest
 {
@@ -65,7 +66,7 @@ namespace WebsocketEduTest
         {
             //given
             MockNetworkStreamProxy stream = new MockNetworkStreamProxy("GET\r\n");
-            NetworkStreamReader networkStreamReader = new NetworkStreamReader(stream);
+            NetworkStreamReader networkStreamReader = new NetworkStreamReader((INetworkStream)stream);
 
             string firstLine = "";
             string secondLine = "";

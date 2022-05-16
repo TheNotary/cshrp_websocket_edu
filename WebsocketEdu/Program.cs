@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
 
-namespace WebsocketEduTest
+namespace WebsocketEdu
 {
     /// <summary>
     /// This application is a basic example of a working websocket server implementation.  
@@ -153,12 +153,19 @@ namespace WebsocketEduTest
             return output.ToArray();
         }
 
+
+
+
+
         public static bool HandleHandshake(INetworkStream stream, byte[] headerBytes)
         {
             String data = Encoding.UTF8.GetString(headerBytes);
 
             if (data != "GE")  // The handshake always begins with the line "GET " and websocket frames can't begin with G unless an extension was negotiated
                 return false;
+
+
+            //HttpHandshaker handshaker = new HttpHandshaker(stream, headerBytes);
 
             NetworkStreamReader sr = new NetworkStreamReader(stream);
             string inboundWebSocketHeaderLine = ReadHttpUpgradeRequestAndReturnWebsocketHeader(sr);

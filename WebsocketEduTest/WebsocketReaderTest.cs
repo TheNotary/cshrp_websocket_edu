@@ -1,9 +1,7 @@
 ﻿using FluentAssertions;
-using System;
-using System.Text;
-using WebsocketEduTest;
 using Xunit;
 using WebsocketEduTest.Extensions;
+using WebsocketEdu;
 
 namespace WebsocketEduTest
 {

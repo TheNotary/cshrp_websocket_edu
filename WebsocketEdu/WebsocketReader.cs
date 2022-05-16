@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WebsocketEduTest.Extensions;
 
-namespace WebsocketEduTest
+namespace WebsocketEdu
 {
     public class WebsocketReader
     {

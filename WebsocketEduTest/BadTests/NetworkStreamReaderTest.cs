@@ -4,6 +4,7 @@ using System.Threading;
 using WebsocketEduTest;
 using Xunit;
 using FluentAssertions;
+using WebsocketEdu;
 
 namespace WebsocketEduTest
 {

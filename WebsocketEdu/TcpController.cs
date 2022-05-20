@@ -28,10 +28,11 @@ namespace WebsocketEdu
                 while (tcpClient.Available < 2) ;
 
                 Console.WriteLine("New Bytes ready for processing from client: " + tcpClient.Available);
+                string msg;
 
                 try
                 {
-                    HandleClientMessage(networkStream);
+                    msg = HandleClientMessage(networkStream);
                 }
                 catch (ClientClosedConnectionException ex)
                 {
@@ -57,22 +58,22 @@ namespace WebsocketEdu
             }
         }
 
-        public static void HandleClientMessage(INetworkStream networkStream)
+        public static string HandleClientMessage(INetworkStream networkStream)
         {
             // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
             Byte[] headerBytes = new Byte[2];
             networkStream.Read(headerBytes, 0, headerBytes.Length);
 
-            if (HandleHandshake(networkStream, headerBytes)) return;
+            if (HandleHandshake(networkStream, headerBytes)) return "";
 
             // Handle ordinary websocket communication
-            HandleWebsocketMessage(networkStream, headerBytes);
+            return HandleWebsocketMessage(networkStream, headerBytes);
         }
 
-        static public void HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
+        static public string HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
         {
-            var websocketReader = new WebsocketReader(stream, headerBytes);
-            WebsocketFrame websocketFrame = websocketReader.ConsumeFrameFromStream();
+            WebsocketClient websocketClient = new WebsocketClient(stream, headerBytes);
+            WebsocketFrame websocketFrame = websocketClient.ConsumeFrameFromStream();
 
             if (!websocketFrame.isMasked)
                 throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
@@ -80,8 +81,10 @@ namespace WebsocketEdu
             switch (websocketFrame.opcode)
             {
                 case (0x01):  // text message
-                    Console.WriteLine("> Client: {0}", Encoding.UTF8.GetString(websocketFrame.decodedPayload));
-                    break;
+                    string msg = Encoding.UTF8.GetString(websocketFrame.decodedPayload);
+                    Console.WriteLine("> Client: {0}", msg);
+                    new CommandRouter(websocketClient).HandleCommand(msg);
+                    return msg;
                 case (0x08):  // close message
                     byte[] response = BuildCloseFrame(websocketFrame.decodedPayload);
                     stream.Write(response, 0, response.Length);
@@ -89,8 +92,13 @@ namespace WebsocketEdu
                         ? "Close frame code was " + websocketFrame.closeCode
                         : "There was no close code.";
                     throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
+                default:
+                    Console.WriteLine("Unknown websocket Opcode received from client: {0}", websocketFrame.opcode);
+                    return "";
+                    throw new NotSupportedException();
             }
         }
+
 
         public static bool HandleHandshake(INetworkStream stream, byte[] headerBytes)
         {

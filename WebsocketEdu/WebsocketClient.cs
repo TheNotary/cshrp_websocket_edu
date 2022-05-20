@@ -7,19 +7,22 @@ using WebsocketEduTest.Extensions;
 
 namespace WebsocketEdu
 {
-    public class WebsocketReader
+    public class WebsocketClient
     {
         INetworkStream _stream;
         byte[] _headerBytes;
         WebsocketFrame frame;
 
-        public WebsocketReader(INetworkStream stream, byte[] headerBytes)
+        public bool AdminAuthenticated { get; set; }
+
+        public WebsocketClient(INetworkStream stream, byte[] headerBytes)
         {
             _stream = stream;
             _headerBytes = headerBytes;
             frame.fin = (headerBytes[0] & 0b10000000) != 0;
             frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
             frame.opcode = headerBytes[0] & 0b00001111;
+            AdminAuthenticated = false;
         }
 
         public ulong determineMessageLength()
@@ -129,6 +132,17 @@ namespace WebsocketEdu
 
             _stream.Read(maskingKey, 0, 4);
             return maskingKey;
+        }
+
+        public void SendMessage()
+        {
+            WebsocketFrame sendFrame = new WebsocketFrame();
+            sendFrame.fin = true;
+            sendFrame.opcode = 0x01;
+
+            //_stream.Write();
+
+
         }
     }
 }

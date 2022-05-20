@@ -19,5 +19,7 @@ namespace WebsocketEdu
         public byte[] decodedPayload;
         public int closeCode;
         public string closeCodeReason;
+
+
     }
 }

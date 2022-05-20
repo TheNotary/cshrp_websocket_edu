@@ -11,9 +11,6 @@ namespace WebsocketEduTest
 {
     public class HttpHandshakerTest : BaseTest
     {
-        public HttpHandshakerTest(ITestOutputHelper output) : base(output)
-        {
-        }
 
         [Fact]
         public void ItReadsHttpUpgradeRequestsAndGetsTheWebsocketHeader()

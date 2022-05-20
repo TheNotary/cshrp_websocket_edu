@@ -19,7 +19,7 @@ namespace WebsocketEduTest
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validWebsocketHello);
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, headerBytes.Length);
-            WebsocketReader websocketReader = new WebsocketReader(networkStreamProxy, headerBytes);
+            WebsocketClient websocketReader = new WebsocketClient(networkStreamProxy, headerBytes);
 
             // when
             WebsocketFrame frame = websocketReader.ConsumeFrameFromStream();
@@ -40,7 +40,7 @@ namespace WebsocketEduTest
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validClientClose);
             byte[] headerBytes = new byte[2];
             networkStreamProxy.Read(headerBytes, 0, headerBytes.Length);
-            WebsocketReader websocketReader = new WebsocketReader(networkStreamProxy, headerBytes);
+            WebsocketClient websocketReader = new WebsocketClient(networkStreamProxy, headerBytes);
 
             // when
             WebsocketFrame frame = websocketReader.ConsumeFrameFromStream();

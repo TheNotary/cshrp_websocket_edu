@@ -5,21 +5,31 @@
     #output > p { overflow-wrap: break-word; }
     #output span { color: blue; }
     #output span.error { color: red; }
+    #n-data { width: 30px; }
 </style>
 <h2>WebSocket Test</h2>
 <textarea cols=60 rows=6></textarea>
 <div>Status: 
     <span id=connection-status>DISCONNECTED</span>
 </div>
-<button id=send-editor>Send Editor Data</button>
-<button id=send-large-data>Send Large Data</button>
-<button id=close-connection>Close Connection</button>
+<div>
+    <button id=send-editor>Send Editor Data</button>
+    <button id=send-editor>Send Editor Data</button>
+    <button id=send-large-data>Send Large Data</button>
+    <button id=close-connection>Close Connection</button>
+</div>
+<div>
+    <label for="n-data">N Characters:</label>
+    <input type="text" id="n-data" name="n-data">
+    <button id=send-n-data>Send N characters</button>
+</div>
 <div id=output></div>
 <script>
     // http://www.websocket.org/echo.html
 
     var btnSendEditor = document.querySelector("#send-editor"),
         btnSendLargeData = document.querySelector("#send-large-data"),
+        btnSendNData = document.querySelector("#send-n-data"),
         btnSendClose = document.querySelector("#close-connection"),
         output = document.querySelector("#output"),
         textarea = document.querySelector("textarea"),
@@ -29,6 +39,7 @@
 
     btnSendEditor.addEventListener("click", onClickButton);
     btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
+    btnSendNData.addEventListener("click", btnSendNData_onClick);
     btnSendClose.addEventListener("click", btnSendClose_onClick);
 
 
@@ -70,6 +81,11 @@
 
     function btnSendLargeData_onClick() {
         websocket.send("_".repeat(65633) + "UUUUU");  // 65538
+    }
+
+    function btnSendNData_onClick() {
+        let n = parseInt(document.querySelector("#n-data").value);
+        websocket.send("_".repeat(n));
     }
 
     function btnSendClose_onClick() {

@@ -1,11 +1,12 @@
 ﻿using FluentAssertions;
 using Xunit;
-using WebsocketEduTest.Extensions;
+using WebsocketEdu.Extensions;
 using WebsocketEdu;
+using System;
 
 namespace WebsocketEduTest
 {
-    public class WebsocketReaderTest
+    public class WebsocketClientTest : BaseTest
     {
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
@@ -16,13 +17,10 @@ namespace WebsocketEduTest
         public void ItCanConsumeAHelloWebsocketMessageAndOutputAFrame()
         {
             // given
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validWebsocketHello);
-            byte[] headerBytes = new byte[2];
-            networkStreamProxy.Read(headerBytes, 0, headerBytes.Length);
-            WebsocketClient websocketReader = new WebsocketClient(networkStreamProxy, headerBytes);
+            WebsocketClient websocketClient = CreateWebsocketClient(validWebsocketHello);
 
             // when
-            WebsocketFrame frame = websocketReader.ConsumeFrameFromStream();
+            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream();
 
             // then
             frame.opcode.Should().Be(0x01);
@@ -37,17 +35,37 @@ namespace WebsocketEduTest
         public void ItCanRecognizeCloseFramesCorrectly()
         {
             // given
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validClientClose);
-            byte[] headerBytes = new byte[2];
-            networkStreamProxy.Read(headerBytes, 0, headerBytes.Length);
-            WebsocketClient websocketReader = new WebsocketClient(networkStreamProxy, headerBytes);
+            WebsocketClient websocketClient = CreateWebsocketClient(validClientClose);
 
             // when
-            WebsocketFrame frame = websocketReader.ConsumeFrameFromStream();
+            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream();
 
             // then
             frame.closeCode.Should().Be(1001);
             frame.closeCodeReason.Should().Be("");
+        }
+
+
+        [Fact]
+        public void ItCanSendWebsocketFrames()
+        {
+            // given
+            WebsocketClient websocketClient = CreateWebsocketClient(validClientClose);
+
+            // when
+            websocketClient.SendMessage("OK");
+
+            // then FIXME: Kirk, don't let it end this way
+            //byte[] writtenBytes = websocketClient.Stream.GetWrites();
+
+            //Assert.Equal(4, writtenBytes.Length);
+            //Assert.Equal(0x23, writtenBytes[0]);
+        }
+
+        [Fact]
+        public void ItCanCountTheCorrectNumberOfCharactersFromALargePayloadAndIDidntMisinterpretTheRFC()
+        {
+            // I'm worried the large payload actually using those first 7bits of the standard header to convey size...
         }
     }
 }

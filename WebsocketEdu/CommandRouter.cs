@@ -26,7 +26,6 @@ namespace WebsocketEdu
             if (msg == "" || msg.Substring(0, 1) != "/")
                 return; // This is not a command message
 
-
             string command = Regex.Match(msg, "^/(\\w+)").Value;
 
             switch (command)
@@ -80,8 +79,6 @@ namespace WebsocketEdu
             // Need to Write via my websocket client class... 
             throw new NotImplementedException();
         }
-
-        
 
     }
 }

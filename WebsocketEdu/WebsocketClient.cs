@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using WebsocketEduTest.Extensions;
+using WebsocketEdu.Extensions;
 
 namespace WebsocketEdu
 {
@@ -14,6 +14,8 @@ namespace WebsocketEdu
         WebsocketFrame frame;
 
         public bool AdminAuthenticated { get; set; }
+
+        public INetworkStream Stream { get; }
 
         public WebsocketClient(INetworkStream stream, byte[] headerBytes)
         {
@@ -134,11 +136,21 @@ namespace WebsocketEdu
             return maskingKey;
         }
 
-        public void SendMessage()
+        public void SendMessage(string msg)
         {
+            byte[] payload = Encoding.UTF8.GetBytes(msg);
             WebsocketFrame sendFrame = new WebsocketFrame();
             sendFrame.fin = true;
             sendFrame.opcode = 0x01;
+            sendFrame.isMasked = false;
+            sendFrame.payloadLength = (ulong) payload.Length;
+            sendFrame.decodedPayload = payload;
+
+            WebsocketSerializer serializer = new WebsocketSerializer(sendFrame);
+
+
+
+
 
             //_stream.Write();
 

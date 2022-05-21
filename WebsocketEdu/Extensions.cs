@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 // Usage:  using WebsocketEduTest.Extensions;
-namespace WebsocketEduTest.Extensions
+namespace WebsocketEdu.Extensions
 {
     public static class Extensions
     {
@@ -26,6 +27,13 @@ namespace WebsocketEduTest.Extensions
         public static byte[] ToBytes(this string meh)
         {
             return Encoding.UTF8.GetBytes(meh);
+        }
+
+        public static byte[] ToBytes(this BitArray bits)
+        {
+            byte[] ret = new byte[(bits.Length - 1) / 8 + 1];
+            bits.CopyTo(ret, 0);
+            return ret;
         }
     }
 

@@ -81,12 +81,12 @@ namespace WebsocketEdu
             switch (websocketFrame.opcode)
             {
                 case (0x01):  // text message
-                    string msg = Encoding.UTF8.GetString(websocketFrame.decodedPayload);
+                    string msg = Encoding.UTF8.GetString(websocketFrame.cleartextPayload);
                     Console.WriteLine("> Client: {0}", msg);
                     new CommandRouter(websocketClient).HandleCommand(msg);
                     return msg;
                 case (0x08):  // close message
-                    byte[] response = BuildCloseFrame(websocketFrame.decodedPayload);
+                    byte[] response = BuildCloseFrame(websocketFrame.cleartextPayload);
                     stream.Write(response, 0, response.Length);
                     string closeCodeString = websocketFrame.closeCode != 0
                         ? "Close frame code was " + websocketFrame.closeCode

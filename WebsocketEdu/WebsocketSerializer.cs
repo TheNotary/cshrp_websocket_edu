@@ -1,11 +1,15 @@
 ﻿using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using WebsocketEdu.Extensions;
 
+[assembly: InternalsVisibleTo("WebsocketEduTest")]
 namespace WebsocketEdu
 {
     public class WebsocketSerializer
     {
         private WebsocketFrame frame;
+        MemoryStream memoryStream = new MemoryStream();
 
         public WebsocketSerializer(WebsocketFrame frame)
         {
@@ -17,7 +21,6 @@ namespace WebsocketEdu
             var memoryStream = new MemoryStream();
 
             // Handle 1st byte: FIN, RSV1-3 (f), and opcode
-            
             byte firstByte = SerializeFirstHeaderByte();
             memoryStream.WriteByte(firstByte);
 
@@ -25,29 +28,49 @@ namespace WebsocketEdu
             byte secondByte = SerializeSecondHeaderByte();
             memoryStream.WriteByte(secondByte);
 
-            // Handle extended payload length bytes
+            // Handle extended payload length bytes also if present
             byte[] extendedPayloadLengthBytes = SerializeExtendedPayloadLengthBytes();
             memoryStream.Write(extendedPayloadLengthBytes, 0, extendedPayloadLengthBytes.Length);
-            
-            byte[] maskingKey = GenerateMaskingKey();
+
+            if (frame.isMasked)
+            {
+                frame.mask = frame.mask.Length == 4 ? frame.mask : GenerateMaskingKey();
+                memoryStream.Write(frame.mask, 0, frame.mask.Length);
+            }
 
             byte[] payloadData = SerializePayloadData();
-            
+            memoryStream.Write(payloadData, 0, payloadData.Length);
 
             return memoryStream.ToArray();
         }
 
-        private byte[] SerializePayloadData()
+        internal byte[] GenerateMaskingKey()
         {
-            throw new NotImplementedException();
+            return RandomNumberGenerator.GetBytes(4);
         }
 
-        private byte[] GenerateMaskingKey()
+        internal MemoryStream xorMessage()
         {
-            throw new NotImplementedException();
+            MemoryStream xorStream = new MemoryStream();
+
+            for (ulong i = 0; i < (ulong)frame.cleartextPayload.Length; i++)
+            {
+                byte maskI = (byte)frame.mask[i % 4];
+                byte rawByte = (byte)frame.cleartextPayload[i];
+                byte decodedByte = (byte)(rawByte ^ maskI);
+                xorStream.WriteByte(decodedByte);
+            }
+            return xorStream;
         }
 
-        private byte SerializeFirstHeaderByte()
+        internal byte[] SerializePayloadData()
+        {
+            if (frame.isMasked)
+                return xorMessage().ToArray();
+            return frame.cleartextPayload;
+        }
+
+        internal byte SerializeFirstHeaderByte()
         {
             int header1Left = new BitArray(new bool[4] {
                false, false, false, frame.fin }
@@ -58,41 +81,21 @@ namespace WebsocketEdu
             return firstByte;
         }
 
-        private byte SerializeSecondHeaderByte()
+        internal byte SerializeSecondHeaderByte()
         {
             int header2Left = Convert.ToInt32(frame.isMasked) << 7;
             int joinedHeader2 = header2Left + (int) frame.payloadLength;
             return BitConverter.GetBytes(joinedHeader2)[0];
         }
 
-        private byte[] SerializeExtendedPayloadLengthBytes()
+        internal byte[] SerializeExtendedPayloadLengthBytes()
         {
-            byte[] payloadLengthBytes;
-            if (frame.payloadLength >= 126 &&
-                frame.payloadLength < 65536)
-            {
-                // the next 2 bytes are payload length
-                payloadLengthBytes = BitConverter.GetBytes(frame.payloadLength).Reverse().ToArray();
-            }
-            else if (frame.payloadLength == 127)
-            {
-                joinedHeader2 = header2Left + 127;
-                // the next 8 bytes are payload length
-                payloadLengthBytes = BitConverter.GetBytes(frame.payloadLength).Reverse().ToArray();
-            }
-            else if (frame.payloadLength > 18446744073709551615)
-            {
-                throw new Exception("Attempted to send a payload that was bigger than the max amount.");
-            }
-            else // < 126
-            {
-                return new byte[0];
-            }
-
-            return payloadLengthBytes;
+            if (frame.payloadLength < 126)
+                return new byte[0];  // no extended payload length for numbers less than 126
+            if (frame.payloadLength <= 65535)
+                return BitConverter.GetBytes(frame.payloadLength).SubArray(0, 2).Reverse().ToArray();
+            return BitConverter.GetBytes(frame.payloadLength).Reverse().ToArray(); // the next 8 bytes are payload length
         }
-
-
 
     }
 }

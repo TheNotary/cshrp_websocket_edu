@@ -28,7 +28,7 @@ namespace WebsocketEduTest
             frame.isMasked.Should().BeTrue();
             frame.mask.Should().Equal(new byte[4] { 90, 120, 149, 83 });
             frame.payloadLength.Should().Be(5);
-            frame.decodedPayload.Should().Equal("hello".ToBytes());
+            frame.cleartextPayload.Should().Equal("hello".ToBytes());
         }
 
         [Fact]

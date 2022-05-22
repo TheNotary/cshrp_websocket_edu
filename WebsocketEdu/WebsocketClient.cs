@@ -66,7 +66,7 @@ namespace WebsocketEdu
 
             if (frame.isMasked)
             {
-                frame.decodedPayload = decodeMessage().ToArray();
+                frame.cleartextPayload = decodeMessage().ToArray();
 
                 if (frame.opcode == 0x01) // text message
                 {
@@ -75,10 +75,10 @@ namespace WebsocketEdu
                 if (frame.opcode == 0x08) // close message
                 {
                     frame.closeCode = frame.payloadLength >= 2
-                        ? BitConverter.ToUInt16(frame.decodedPayload.SubArray(0, 2).Reverse().ToArray())
+                        ? BitConverter.ToUInt16(frame.cleartextPayload.SubArray(0, 2).Reverse().ToArray())
                         : 0;
                     frame.closeCodeReason = frame.payloadLength > 2
-                        ? Encoding.UTF8.GetString(frame.decodedPayload.SubArray(2))
+                        ? Encoding.UTF8.GetString(frame.cleartextPayload.SubArray(2))
                         : "";
                     return frame;
                 }
@@ -144,7 +144,7 @@ namespace WebsocketEdu
             sendFrame.opcode = 0x01;
             sendFrame.isMasked = false;
             sendFrame.payloadLength = (ulong) payload.Length;
-            sendFrame.decodedPayload = payload;
+            sendFrame.cleartextPayload = payload;
 
             WebsocketSerializer serializer = new WebsocketSerializer(sendFrame);
 

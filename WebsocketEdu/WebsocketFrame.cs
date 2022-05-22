@@ -16,7 +16,7 @@ namespace WebsocketEdu
         public ulong payloadLength;
         public byte[] mask;
         public byte[] encodedPayload;
-        public byte[] decodedPayload;
+        public byte[] cleartextPayload;
         public int closeCode;
         public string closeCodeReason;
 

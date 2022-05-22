@@ -44,8 +44,11 @@ namespace WebsocketEduTest
         {
             return Encoding.UTF8.GetString(_writeStream.ToArray());
         }
+        public override byte[] GetWrites()
+        {
+            return _writeStream.ToArray();
+        }
 
-        // FIXME: check for off by one
         public bool IsDataAvailable()
         {
             return SourceStream.Position < SourceStream.Length;

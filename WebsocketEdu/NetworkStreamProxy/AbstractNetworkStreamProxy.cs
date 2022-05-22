@@ -22,6 +22,7 @@ namespace WebsocketEdu
         public abstract Stream WriteStream { get; }
         public abstract MemoryStream ReadLog { get; set; }
         public abstract string GetWritesAsString();
+        public abstract byte[] GetWrites();
         public void Read(byte[] buffer, int offset, int count)
         {
             SourceStream.Read(buffer, offset, count);

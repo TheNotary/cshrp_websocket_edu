@@ -15,7 +15,7 @@ namespace WebsocketEdu
 
         public bool AdminAuthenticated { get; set; }
 
-        public INetworkStream Stream { get; }
+        public INetworkStream Stream => _stream;
 
         public WebsocketClient(INetworkStream stream, byte[] headerBytes)
         {
@@ -148,13 +148,8 @@ namespace WebsocketEdu
 
             WebsocketSerializer serializer = new WebsocketSerializer(sendFrame);
 
-
-
-
-
-            //_stream.Write();
-
-
+            byte[] frameAsBytes = serializer.ToBytes();
+            _stream.Write(frameAsBytes, 0, frameAsBytes.Length);
         }
     }
 }

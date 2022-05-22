@@ -24,5 +24,10 @@ namespace WebsocketEdu
             throw new NotImplementedException();
         }
 
+        public override byte[] GetWrites()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

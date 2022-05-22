@@ -51,21 +51,16 @@ namespace WebsocketEduTest
         {
             // given
             WebsocketClient websocketClient = CreateWebsocketClient(validClientClose);
+            byte[] expectedWrittenBytes = new byte[] { 129, 2, 79, 75 };
 
             // when
             websocketClient.SendMessage("OK");
 
-            // then FIXME: Kirk, don't let it end this way
-            //byte[] writtenBytes = websocketClient.Stream.GetWrites();
-
-            //Assert.Equal(4, writtenBytes.Length);
-            //Assert.Equal(0x23, writtenBytes[0]);
+            // then
+            byte[] writtenBytes = websocketClient.Stream.GetWrites();
+            writtenBytes.Length.Should().Be(expectedWrittenBytes.Length);
+            writtenBytes.Should().Equal(expectedWrittenBytes);
         }
-
-        [Fact]
-        public void ItCanCountTheCorrectNumberOfCharactersFromALargePayloadAndIDidntMisinterpretTheRFC()
-        {
-            // I'm worried the large payload actually using those first 7bits of the standard header to convey size...
-        }
+        
     }
 }

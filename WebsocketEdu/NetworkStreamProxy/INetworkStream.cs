@@ -11,5 +11,7 @@
         string PrintBytesRecieved();
         void ClearDebugBuffer();
         string GetWritesAsString();
+        byte[] GetWrites();
+
     }
 }

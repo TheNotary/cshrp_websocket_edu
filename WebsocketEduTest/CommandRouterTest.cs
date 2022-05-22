@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,12 +23,15 @@ namespace WebsocketEduTest
             WebsocketClient websocketClient = CreateWebsocketClient();
             CommandRouter commandRouter = new CommandRouter(websocketClient, conf);
             string command = "/auth FAKEPASS";
+            byte[] expectedResponse = new byte[] { 0x81, 0x02, 0x4F, 0x4B };
 
             // when
             commandRouter.HandleCommand(command);
 
             // then
-            Assert.True(websocketClient.AdminAuthenticated);
+            websocketClient.AdminAuthenticated.Should().Be(true);
+            byte[] writes = websocketClient.Stream.GetWrites();
+            writes.Should().Equal(expectedResponse);
         }
 
     }

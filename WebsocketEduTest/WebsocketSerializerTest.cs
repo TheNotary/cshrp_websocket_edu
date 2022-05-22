@@ -144,29 +144,6 @@ namespace WebsocketEduTest
             payloadBytes.Should().Equal(expectedBytes);
         }
 
-        // This is a good test but requires me to fix a bug where dotnet can't build strings big enough to fit in a websocketframe
-        // So I really need to add a feature for splitting frames up for large messages... that's a won't fix
-        //[Fact]
-        //public void ItCanSerializePayloadLengthOfMaxSize()
-        //{
-        //    // given
-        //    WebsocketFrame frame = new WebsocketFrame();
-        //    MemoryStream m = new MemoryStream();
-        //    int stringSize = 1000000000; // 2 147 483 647  // sadly... this number is the maximum string size which is less than the max size of a websocket payload (2^63 or 9223372036854775808)
-        //    frame.cleartextPayload = Encoding.UTF8.GetBytes(String.Empty.PadLeft(stringSize, 'h'));
-        //    frame.isMasked = false;
-        //    frame.payloadLength = (ulong)frame.cleartextPayload.Length;
-        //    WebsocketSerializer serializer = new WebsocketSerializer(frame);
-        //    byte[] expectedBytes = new byte[] { 0, 0, 0, 0,
-        //                                        255, 255, 255, 255 };
-
-        //    // when
-        //    byte[] payloadBytes = serializer.SerializeExtendedPayloadLengthBytes();
-
-        //    // then
-        //    payloadBytes.Should().Equal(expectedBytes);
-        //}
-
         [Fact]
         public void ItCanGenerateMaskingKey()
         {

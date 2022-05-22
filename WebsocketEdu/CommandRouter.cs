@@ -61,6 +61,7 @@ namespace WebsocketEdu
             if (adminPassword == cleanMsg)
             { 
                 _websocketClient.AdminAuthenticated = true;
+                _websocketClient.SendMessage("OK");
                 Console.WriteLine("Admin Password checked to authenticate client");
                 return;
             }

@@ -39,8 +39,11 @@ namespace WebsocketEdu
                 case ("/auth"):
                     AuthenticateClient(msg);
                     break;
-                case ("/1 "):
-                    RelayMessageTo(1, msg.Substring(2).Trim());
+                case ("/subscribe"):
+                    SubscribeToChannel(msg);
+                    break;
+                case ("/publish"):
+                    PublishToChannel(msg);
                     break;
                 default:
                     Console.WriteLine("Client sent unknown command");
@@ -71,14 +74,28 @@ namespace WebsocketEdu
 
         private void CloseServer()
         {
-            Console.WriteLine("Client sent close command, closing");
+            Console.WriteLine("Client sent close command, closing.");
             Environment.Exit(0);
         }
 
-        private void RelayMessageTo(int v1, string v2)
+        private void SubscribeToChannel(string command)
         {
-            // Need to Write via my websocket client class... 
-            throw new NotImplementedException();
+            string cleanMsg = Regex.Replace(command, "^/subscribe", "").Trim();
+            string channelName = cleanMsg;
+
+            _websocketClient.subscriptions.Add(channelName);
+
+        }
+
+        private void PublishToChannel(string command)
+        {
+            // split message into parameters
+            string cleanParameters = Regex.Replace(command, "^/publish", "").Trim();
+            string channelName = cleanParameters.Split(" ")[0];
+            string content = Regex.Replace(cleanParameters, $"^{channelName}", "");
+
+            // send message to all client subscribing to that message
+            _websocketClient.ChannelBridge.PublishContent(channelName, content);
         }
 
     }

@@ -10,10 +10,11 @@ using Xunit.Abstractions;
 using System.IO.Pipes;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using WebsocketEdu;
 
 namespace WebsocketEduTest
 {
-    public class WaysOfTransmittingDataAcrossThreadsTest
+    public class WaysOfTransmittingDataAcrossThreadsTest : BaseTest
     {
         private readonly ITestOutputHelper output;
 
@@ -21,6 +22,29 @@ namespace WebsocketEduTest
         {
             this.output = output;
         }
+
+
+        [Fact]
+        public void ItCanUseTheObserverPattern()
+        {
+            var websocketClient1 = CreateWebsocketClient();
+            var websocketClient2 = CreateWebsocketClient();
+            WebsocketFrame frame = new WebsocketFrame();
+            frame.cleartextPayload = Encoding.UTF8.GetBytes("HELLO SUBSCRIBERS!");
+
+            ChannelBridge channelBridge = new ChannelBridge();
+            ChannelSubscriber subscriber1 = new ChannelSubscriber();
+            ChannelSubscriber subscriber2 = new ChannelSubscriber();
+
+            subscriber1.Subscribe(channelBridge);
+            subscriber2.Subscribe(channelBridge);
+             
+            channelBridge.PublishFrame(frame);
+
+            Assert.True(true);
+            Assert.True(false); // TODO: make this test actually good...
+        }
+
 
         [Fact]
         public void ItCanUseQueues()

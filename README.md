@@ -11,5 +11,10 @@ ref:  Secrets management in VS 2022 https://docs.microsoft.com/en-us/aspnet/core
 x Dry up the code between NetworkStreamProxy and MockNetworkStreamProxy with an abstract class
 s Look into a better implementation of the websocket server, streams blow
 x Create an object just for WebSocketReader
-- Make it so the client can send a command to the websocket server for turn blue and shutdown
+x Create command for shutdown
+- Create command for turning blue
 - Make it so the webserver can have two clients communicate to eachother
+- Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
+- Clean up the server so it looks like SimpleWebsocketServer.Start()
+- Put it in a docker container
+- Carve it into libraries for use in other projects

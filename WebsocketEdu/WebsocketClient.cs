@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
 using System.Text;
-using System.Threading.Tasks;
 using WebsocketEdu.Extensions;
 
 namespace WebsocketEdu
@@ -12,6 +10,10 @@ namespace WebsocketEdu
         INetworkStream _stream;
         byte[] _headerBytes;
         WebsocketFrame frame;
+
+        // Bayeux Bridge
+        public ChannelBridge ChannelBridge;
+        public List<string> subscriptions = new List<string>();
 
         public bool AdminAuthenticated { get; set; }
 

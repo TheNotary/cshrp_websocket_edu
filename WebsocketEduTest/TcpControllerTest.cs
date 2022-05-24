@@ -5,10 +5,11 @@ using System.Threading;
 using System;
 using FluentAssertions;
 using WebsocketEdu;
+using WebsocketEdu.Extensions;
 
 namespace WebsocketEduTest
 {
-    public class TcpHandlerTest
+    public class TcpControllerTest : BaseTest
     {
         string validHttpUpgradeRequest = $"GET / HTTP/1.1\r\nHost: server.example.com\r\nUpgrade: websocket\r\nSec-WebSocket-Key: zzz\r\n\r\n";
         byte[] validWebsocketHello = new byte[] { 129, 133, 90, 120, 149, 83, 50, 29, 249, 63, 53 };
@@ -52,12 +53,13 @@ namespace WebsocketEduTest
         {
             // given
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validHttpUpgradeRequest);
+            ChannelBridge c = new ChannelBridge();
 
             // when
             var t = new Thread(() => {
-                TcpController.HandleClientMessage(networkStreamProxy);
-                TcpController.HandleClientMessage(networkStreamProxy);
-                Assert.Throws<ClientClosedConnectionException>(() => TcpController.HandleClientMessage(networkStreamProxy));
+                TcpController.HandleClientMessage(networkStreamProxy, c);
+                TcpController.HandleClientMessage(networkStreamProxy, c);
+                Assert.Throws<ClientClosedConnectionException>(() => TcpController.HandleClientMessage(networkStreamProxy, c));
             }); t.Start();
             networkStreamProxy.PutBytes(validWebsocketHello);
             networkStreamProxy.PutBytes(validClientClose);
@@ -90,6 +92,7 @@ namespace WebsocketEduTest
 
             Assert.Equal(validHandshakeResponse, networkStreamProxy.GetWritesAsString());
         }
+
 
         private void PerformHandleHandshakeInThread(object? obj)
         {

@@ -9,7 +9,7 @@ namespace WebsocketEdu
     /// </summary>
     public class WebsocketEduApp
     {
-        private static int threadPoolSize = 1;
+        private static int threadPoolSize = 2;
         private static int port = 80;
         private static TcpListener? server;
         private static LinkedList<Thread> threads = new LinkedList<Thread>();
@@ -24,13 +24,15 @@ namespace WebsocketEdu
 
         public static void ThreadManagementLoop()
         {
+            ChannelBridge channelBridge = new ChannelBridge();
             while (true)
             {
                 if (threads.Count < threadPoolSize)
                 {
                     //GC.Collect(); // For testing memory leaks
                     Thread t = new Thread(new ParameterizedThreadStart(TcpController.HandleNewClientConnectionInThread));
-                    t.Start(server);
+                    object[] threadParams = new object[] { server, channelBridge };
+                    t.Start(threadParams);
                     threads.AddLast(t);
                     Console.WriteLine("Started new thread, threadcount at " + threads.Count);
                 }

@@ -1,16 +1,13 @@
 using Xunit;
-using WebsocketEduTest;
 using System.IO;
-using System.Text;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using System;
 using Xunit.Abstractions;
 using System.IO.Pipes;
-using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
-using WebsocketEdu;
+using FluentAssertions;
+using WebsocketEdu.Extensions;
 
 namespace WebsocketEduTest
 {
@@ -22,29 +19,6 @@ namespace WebsocketEduTest
         {
             this.output = output;
         }
-
-
-        [Fact]
-        public void ItCanUseTheObserverPattern()
-        {
-            var websocketClient1 = CreateWebsocketClient();
-            var websocketClient2 = CreateWebsocketClient();
-            WebsocketFrame frame = new WebsocketFrame();
-            frame.cleartextPayload = Encoding.UTF8.GetBytes("HELLO SUBSCRIBERS!");
-
-            ChannelBridge channelBridge = new ChannelBridge();
-            ChannelSubscriber subscriber1 = new ChannelSubscriber();
-            ChannelSubscriber subscriber2 = new ChannelSubscriber();
-
-            subscriber1.Subscribe(channelBridge);
-            subscriber2.Subscribe(channelBridge);
-             
-            channelBridge.PublishFrame(frame);
-
-            Assert.True(true);
-            Assert.True(false); // TODO: make this test actually good...
-        }
-
 
         [Fact]
         public void ItCanUseQueues()

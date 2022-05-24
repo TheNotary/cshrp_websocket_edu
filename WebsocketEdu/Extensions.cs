@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 // Usage:  using WebsocketEduTest.Extensions;
@@ -34,6 +35,22 @@ namespace WebsocketEdu.Extensions
             byte[] ret = new byte[(bits.Length - 1) / 8 + 1];
             bits.CopyTo(ret, 0);
             return ret;
+        }
+
+        public static TValue GetOrCreate<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key) where TValue : new()
+        {
+            if (!dict.TryGetValue(key, out TValue val))
+            {
+                val = new TValue();
+                dict.Add(key, val);
+            }
+
+            return val;
+        }
+        public static string Humanize(this string input)
+        {
+            Regex rgx = new Regex("[^a-zA-Z0-9\\s!]");
+            return rgx.Replace(input, "");
         }
     }
 

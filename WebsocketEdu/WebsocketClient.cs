@@ -5,15 +5,14 @@ using WebsocketEdu.Extensions;
 
 namespace WebsocketEdu
 {
-    public class WebsocketClient
+    public class WebsocketClient : ChannelSubscriber
     {
         INetworkStream _stream;
         byte[] _headerBytes;
         WebsocketFrame frame;
 
         // Bayeux Bridge
-        public ChannelBridge ChannelBridge;
-        public List<string> subscriptions = new List<string>();
+        public ChannelBridge channelBridge;
 
         public bool AdminAuthenticated { get; set; }
 
@@ -23,6 +22,18 @@ namespace WebsocketEdu
         {
             _stream = stream;
             _headerBytes = headerBytes;
+            channelBridge = new ChannelBridge();
+            frame.fin = (headerBytes[0] & 0b10000000) != 0;
+            frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
+            frame.opcode = headerBytes[0] & 0b00001111;
+            AdminAuthenticated = false;
+        }
+
+        public WebsocketClient(INetworkStream stream, byte[] headerBytes, ChannelBridge cb)
+        {
+            _stream = stream;
+            _headerBytes = headerBytes;
+            channelBridge = cb;
             frame.fin = (headerBytes[0] & 0b10000000) != 0;
             frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
             frame.opcode = headerBytes[0] & 0b00001111;
@@ -152,6 +163,12 @@ namespace WebsocketEdu
 
             byte[] frameAsBytes = serializer.ToBytes();
             _stream.Write(frameAsBytes, 0, frameAsBytes.Length);
+        }
+
+        public override void OnNext(string content)
+        {
+            Console.WriteLine("Message Received so should be relayed: " + content);
+            SendMessage(content);
         }
     }
 }

@@ -61,6 +61,26 @@ namespace WebsocketEduTest
             writtenBytes.Length.Should().Be(expectedWrittenBytes.Length);
             writtenBytes.Should().Equal(expectedWrittenBytes);
         }
-        
+
+        [Fact]
+        public void ItCanUseTheObserverPatternToPumpDataToWebsockets()
+        {
+            var websocketClient1 = CreateWebsocketClient();
+            var websocketClient2 = CreateWebsocketClient();
+            string channel = "channel_1";
+            string contentToPublish = "HELLO OBSERVERS!";
+
+            ChannelBridge channelBridge = new ChannelBridge();
+            websocketClient1.Subscribe(channelBridge, channel);
+            websocketClient2.Subscribe(channelBridge, channel);
+
+            channelBridge.PublishContent(channel, contentToPublish);
+
+            websocketClient1.clientId.Length.Should().Be(36);
+            websocketClient1.Stream.GetWritesAsString().Humanize()
+                .Should().Be(contentToPublish);
+            websocketClient2.Stream.GetWritesAsString().Humanize()
+                .Should().Be(contentToPublish);
+        }
     }
 }

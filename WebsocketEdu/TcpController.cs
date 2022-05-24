@@ -7,12 +7,17 @@ namespace WebsocketEdu
 {
     public class TcpController
     {
-        public static void HandleNewClientConnectionInThread(object? server)
+        // Expects object[] { server, channelBridge };
+        public static void HandleNewClientConnectionInThread(object? parameters)
         {
-            if (server == null)
-                throw new ArgumentNullException(nameof(server));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
-            TcpClient tcpClient = ((TcpListener)server).AcceptTcpClient();
+            object[] parameterz = (object[])parameters;
+
+            TcpClient tcpClient = ((TcpListener)parameterz[0]).AcceptTcpClient();
+            ChannelBridge channelBridge = (ChannelBridge) parameterz[1]; 
+
             string remoteIp = GetRemoteIp(tcpClient);
 
             Console.WriteLine("A client connected from {0}", remoteIp);
@@ -32,7 +37,7 @@ namespace WebsocketEdu
 
                 try
                 {
-                    msg = HandleClientMessage(networkStream);
+                    msg = HandleClientMessage(networkStream, channelBridge);
                 }
                 catch (ClientClosedConnectionException ex)
                 {
@@ -58,47 +63,19 @@ namespace WebsocketEdu
             }
         }
 
-        public static string HandleClientMessage(INetworkStream networkStream)
+        public static string HandleClientMessage(INetworkStream networkStream, ChannelBridge channelBridge)
         {
             // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
             Byte[] headerBytes = new Byte[2];
             networkStream.Read(headerBytes, 0, headerBytes.Length);
-
             if (HandleHandshake(networkStream, headerBytes)) return "";
 
             // Handle ordinary websocket communication
-            return HandleWebsocketMessage(networkStream, headerBytes);
-        }
-
-        static public string HandleWebsocketMessage(INetworkStream stream, Byte[] headerBytes)
-        {
-            WebsocketClient websocketClient = new WebsocketClient(stream, headerBytes);
+            WebsocketClient websocketClient = new WebsocketClient(networkStream, headerBytes, channelBridge);
             WebsocketFrame websocketFrame = websocketClient.ConsumeFrameFromStream();
-
-            if (!websocketFrame.isMasked)
-                throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
-
-            switch (websocketFrame.opcode)
-            {
-                case (0x01):  // text message
-                    string msg = Encoding.UTF8.GetString(websocketFrame.cleartextPayload);
-                    Console.WriteLine("> Client: {0}", msg);
-                    new CommandRouter(websocketClient).HandleCommand(msg);
-                    return msg;
-                case (0x08):  // close message
-                    byte[] response = BuildCloseFrame(websocketFrame.cleartextPayload);
-                    stream.Write(response, 0, response.Length);
-                    string closeCodeString = websocketFrame.closeCode != 0
-                        ? "Close frame code was " + websocketFrame.closeCode
-                        : "There was no close code.";
-                    throw new ClientClosedConnectionException("The client sent a close frame.  " + closeCodeString);
-                default:
-                    Console.WriteLine("Unknown websocket Opcode received from client: {0}", websocketFrame.opcode);
-                    return "";
-                    throw new NotSupportedException();
-            }
+            CommandRouter commandRouter = new CommandRouter(websocketClient);
+            return commandRouter.HandleWebsocketMessage(websocketFrame);
         }
-
 
         public static bool HandleHandshake(INetworkStream stream, byte[] headerBytes)
         {

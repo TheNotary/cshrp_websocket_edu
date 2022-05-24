@@ -42,9 +42,6 @@ namespace WebsocketEdu
             return sb.ToString();
         }
 
-        /* TODO/ FIXME: I need to write this method myself so that I only update the Position of 
-         * the stream by the least amount needed!
-         * */
         private int Read()
         {
             long originalPosition = _stream.CanSeek ? _stream.Position : -1;

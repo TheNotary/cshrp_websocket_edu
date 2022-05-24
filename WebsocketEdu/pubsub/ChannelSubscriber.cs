@@ -9,15 +9,11 @@ namespace WebsocketEdu
     public class ChannelSubscriber : IObserver<string>
     {
         private IDisposable? cancellation;
+        public string clientId = Guid.NewGuid().ToString();
 
-        public ChannelSubscriber() // TODO: add websocket client here
+        public virtual void Subscribe(ChannelBridge provider, string channel)
         {
-            
-        }
-
-        public virtual void Subscribe(ChannelBridge provider)
-        {
-            cancellation = provider.Subscribe(this);
+            cancellation = provider.Subscribe(this, channel);
         }
 
         public virtual void Unsubscribe()
@@ -36,7 +32,7 @@ namespace WebsocketEdu
             throw new NotImplementedException();
         }
 
-        public void OnNext(string content)
+        public virtual void OnNext(string content)
         {
             Console.WriteLine("Message Received so should be relayed: " + content);
         }

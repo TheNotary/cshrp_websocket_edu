@@ -8,19 +8,23 @@
     #n-data { width: 30px; }
 </style>
 <h2>WebSocket Test</h2>
-<textarea cols=60 rows=6></textarea>
-<div>Status: 
-    <span id=connection-status>DISCONNECTED</span>
+<div>
+    Websocket Server: <input type="text" id="remote-ip" name="remote-ip" value="127.0.0.1" />
+    
 </div>
 <div>
-    <button id=send-editor>Send Editor Data</button>
-    <button id=send-editor>Send Editor Data</button>
-    <button id=send-large-data>Send Large Data</button>
+    <button id=open-connection>Open Connection</button>
     <button id=close-connection>Close Connection</button>
+    Status: <span id=connection-status>DISCONNECTED</span>
+</div>
+<textarea id="editor" cols=60 rows=6 onkeypress="onEditorKeyPress();"></textarea>
+<div>
+    <button id=send-editor>Send Editor Data</button>
 </div>
 <div>
+    <button id=send-large-data>Send Large Data</button>
     <label for="n-data">N Characters:</label>
-    <input type="text" id="n-data" name="n-data">
+    <input type="text" id="n-data" name="n-data"/>
     <button id=send-n-data>Send N characters</button>
 </div>
 <div id=output></div>
@@ -98,5 +102,21 @@
         text && doSend(text);
         textarea.value = "";
         textarea.focus();
+    }
+
+    function onEditorKeyPress(e) {
+        var event = window.event;
+        var key = event.keyCode;
+
+        // If the user has pressed enter
+        if (key === 13) {
+            sendEditorContent()
+            event.preventDefault()
+            event.stopPropagation()
+            return false;
+        }
+        else {
+            return true;
+        }
     }
 </script>

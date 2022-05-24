@@ -10,7 +10,6 @@
 <h2>WebSocket Test</h2>
 <div>
     Websocket Server: <input type="text" id="remote-ip" name="remote-ip" value="127.0.0.1" />
-    
 </div>
 <div>
     <button id=open-connection>Open Connection</button>
@@ -35,40 +34,45 @@
         btnSendLargeData = document.querySelector("#send-large-data"),
         btnSendNData = document.querySelector("#send-n-data"),
         btnSendClose = document.querySelector("#close-connection"),
+        btnOpenConnection = document.querySelector("#open-connection"),
         output = document.querySelector("#output"),
         textarea = document.querySelector("textarea"),
-        connectionStatus = document.querySelector("#connection-status"),
-        wsUri = "ws://127.0.0.1/",
-        websocket = new WebSocket(wsUri);
+        connectionStatus = document.querySelector("#connection-status");
 
+    connect();
+        
     btnSendEditor.addEventListener("click", onClickButton);
     btnSendLargeData.addEventListener("click", btnSendLargeData_onClick);
     btnSendNData.addEventListener("click", btnSendNData_onClick);
     btnSendClose.addEventListener("click", btnSendClose_onClick);
+    btnOpenConnection.addEventListener("click", btnOpenConnection_onClick);
 
+    function getWebsocketUri() {
+        return "ws://" + document.querySelector("#remote-ip").value + "/"
+    }
 
-    websocket.onopen = function (e) {
-        connectionStatus.innerHTML = "CONNECTED"
-        doSend("connection test");
-        // websocket.send("*".repeat(129));
-        // websocket.send("*".repeat(65535));
-    };
+    function connect() {
+        window.websocket = new WebSocket(getWebsocketUri());
 
-    websocket.onclose = function (e) {
-        connectionStatus.innerHTML = "DISCONNECTED"
-        writeToScreen("<span>RESPONSE: " + e + "</span>");
-        window.e = e;
+        websocket.onopen = function (e) {
+            connectionStatus.innerHTML = "CONNECTED"
+            doSend("connection test");
+        };
 
-        // writeToScreen("DISCONNECTED");
-    };
+        websocket.onclose = function (e) {
+            connectionStatus.innerHTML = "DISCONNECTED"
+            writeToScreen("<span>RESPONSE: " + e + "</span>");
+            window.e = e;
+        };
 
-    websocket.onmessage = function (e) {
-        writeToScreen("<span>RESPONSE: " + e.data + "</span>");
-    };
+        websocket.onmessage = function (e) {
+            writeToScreen("<span>RESPONSE: " + e.data + "</span>");
+        };
 
-    websocket.onerror = function (e) {
-        writeToScreen("<span class=error>ERROR:</span> " + e);
-    };
+        websocket.onerror = function (e) {
+            writeToScreen("<span class=error>ERROR:</span> " + e);
+        };
+    }
 
     function doSend(message) {
         writeToScreen("SENDING: " + message);
@@ -94,6 +98,10 @@
 
     function btnSendClose_onClick() {
         websocket.close();
+    }
+
+    function btnOpenConnection_onClick() {
+        connect();
     }
 
     function sendEditorContent() {

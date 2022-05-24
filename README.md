@@ -6,15 +6,26 @@ ref:  parsing a UTF-8 byte stream, https://developpaper.com/c-the-correct-way-to
 ref:  Secrets management in VS 2022 https://docs.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-5.0&tabs=windows
 
 
+## Build
+
+```
+docker build . -t websocket-edu
+```
+
+## Use
+
+```
+docker run -it -p 80:80 websocket-edu
+```
+
 ## TODO
 
 x Dry up the code between NetworkStreamProxy and MockNetworkStreamProxy with an abstract class
 s Look into a better implementation of the websocket server, streams blow
 x Create an object just for WebSocketReader
 x Create command for shutdown
-- Create command for turning blue
-- Make it so the webserver can have two clients communicate to eachother
-- Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
-- Clean up the server so it looks like SimpleWebsocketServer.Start()
-- Put it in a docker container
+x Make it so the webserver can have two clients communicate to eachother
+x Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
+x Clean up the server so it looks like SimpleWebsocketServer.Start()
+x Put it in a docker container
 - Carve it into libraries for use in other projects

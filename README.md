@@ -25,7 +25,8 @@ s Look into a better implementation of the websocket server, streams blow
 x Create an object just for WebSocketReader
 x Create command for shutdown
 x Make it so the webserver can have two clients communicate to eachother
-x Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
 x Clean up the server so it looks like SimpleWebsocketServer.Start()
 x Put it in a docker container
+- Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
+- Pass in admin password as a parameter to new SimpleWebsocketServer(...)
 - Carve it into libraries for use in other projects

@@ -11,7 +11,8 @@ namespace WebsocketEdu
     {
         static void Main(string[] args)
         {
-            SimpleWebsocketServer simpleWebsocketServer = new SimpleWebsocketServer("0.0.0.0", 80, 2);
+            string adminPassword = "password";
+            SimpleWebsocketServer simpleWebsocketServer = new SimpleWebsocketServer("0.0.0.0", 80, 2, adminPassword);
             simpleWebsocketServer.Start();
         }
 

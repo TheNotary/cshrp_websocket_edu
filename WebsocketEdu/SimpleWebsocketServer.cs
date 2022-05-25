@@ -8,16 +8,22 @@ namespace WebsocketEdu
         private string localAddress;
         private int port;
         private int threadPoolSize;
+        private string adminPassword;
         private TcpListener? server;
         private LinkedList<Thread> threads = new LinkedList<Thread>();
 
-        public SimpleWebsocketServer(string localAddress, int port) : this(localAddress, port, 20) { }
+        public SimpleWebsocketServer(string localAddress, int port) : this(localAddress, port, 20, "") { }
 
-        public SimpleWebsocketServer(string localAddress, int port, int threadPoolSize)
+        public SimpleWebsocketServer(string localAddress, int port, int threadPoolSize, string adminPassword)
         {
             this.localAddress = localAddress;
             this.port = port;
             this.threadPoolSize = threadPoolSize;
+            if (adminPassword == "")
+            {
+                adminPassword = "todo:lookupenv";
+            }
+            this.adminPassword = adminPassword;
         }
 
         public void Start()
@@ -38,6 +44,7 @@ namespace WebsocketEdu
                 {
                     //GC.Collect(); // For testing memory leaks
                     Thread t = new Thread(new ParameterizedThreadStart(TcpController.HandleNewClientConnectionInThread));
+                    if (server == null) throw new Exception("Server was null which isn't possible");
                     object[] threadParams = new object[] { server, channelBridge };
                     t.Start(threadParams);
                     threads.AddLast(t);

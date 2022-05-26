@@ -7,7 +7,6 @@ namespace WebsocketEdu
     {
         WebsocketClient _websocketClient;
 
-
         public CommandRouter(WebsocketClient websocketClient)
         {
             _websocketClient = websocketClient;

@@ -15,7 +15,7 @@ docker build . -t websocket-edu
 ## Use
 
 ```
-docker run -it -p 80:80 websocket-edu
+docker run -it -e WEBSOCKET_SERVER_ADMIN_PASSWORD=weakPass -p 80:80 websocket-edu
 ```
 
 ## TODO
@@ -27,6 +27,8 @@ x Create command for shutdown
 x Make it so the webserver can have two clients communicate to eachother
 x Clean up the server so it looks like SimpleWebsocketServer.Start()
 x Put it in a docker container
+x Move references to Configuration out to program.cs
+x Fix bug where generating mask was iffy
+x Feed password in from top level
 - Make it so a C# client can connect to the server via SimpleWebsocketClient.Connect("127.0.0.1:80")
-- Pass in admin password as a parameter to new SimpleWebsocketServer(...)
 - Carve it into libraries for use in other projects

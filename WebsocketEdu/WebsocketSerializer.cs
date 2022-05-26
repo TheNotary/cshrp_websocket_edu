@@ -46,7 +46,9 @@ namespace WebsocketEdu
 
         internal byte[] GenerateMaskingKey()
         {
-            return RandomNumberGenerator.GetBytes(4);
+            byte[] key = new byte[4];
+            RandomNumberGenerator.Create().GetBytes(key);
+            return key;
         }
 
         internal MemoryStream xorMessage()

@@ -1,10 +1,5 @@
 ﻿using FluentAssertions;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using WebsocketEdu;
 using WebsocketEdu.Extensions;
 using Xunit;
@@ -18,11 +13,9 @@ namespace WebsocketEduTest
         public void ItCanHandleAuthenticationCommands()
         {
             // given
-            IDictionary<string, string> hash = new Dictionary<string, string>();
-            hash.Add("adminPassword", "FAKEPASS");
-            IConfigurationRoot conf = new ConfigurationBuilder().AddInMemoryCollection(hash).Build();
             WebsocketClient websocketClient = CreateWebsocketClient();
-            CommandRouter commandRouter = new CommandRouter(websocketClient, conf);
+            websocketClient.channelBridge.adminPassword = "FAKEPASS";
+            CommandRouter commandRouter = new CommandRouter(websocketClient);
             string command = "/auth FAKEPASS";
             byte[] expectedResponse = new byte[] { 0x81, 0x02, 0x4F, 0x4B };
 

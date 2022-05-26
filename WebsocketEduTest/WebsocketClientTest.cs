@@ -2,7 +2,6 @@
 using Xunit;
 using WebsocketEdu.Extensions;
 using WebsocketEdu;
-using System;
 
 namespace WebsocketEduTest
 {
@@ -70,7 +69,7 @@ namespace WebsocketEduTest
             string channel = "channel_1";
             string contentToPublish = "HELLO OBSERVERS!";
 
-            ChannelBridge channelBridge = new ChannelBridge();
+            ChannelBridge channelBridge = new ChannelBridge("");
             websocketClient1.Subscribe(channelBridge, channel);
             websocketClient2.Subscribe(channelBridge, channel);
 

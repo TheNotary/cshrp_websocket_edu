@@ -1,10 +1,12 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 
 namespace WebsocketEdu
 {
     internal class SimpleWebsocketServer
     {
+        const int defaultThreadPoolSize = 20;
         private string localAddress;
         private int port;
         private int threadPoolSize;
@@ -12,32 +14,28 @@ namespace WebsocketEdu
         private TcpListener? server;
         private LinkedList<Thread> threads = new LinkedList<Thread>();
 
-        public SimpleWebsocketServer(string localAddress, int port) : this(localAddress, port, 20, "") { }
+        public SimpleWebsocketServer(string localAddress, int port) : this(localAddress, port, defaultThreadPoolSize, GenerateRandomPassword()) { }
 
         public SimpleWebsocketServer(string localAddress, int port, int threadPoolSize, string adminPassword)
         {
             this.localAddress = localAddress;
             this.port = port;
             this.threadPoolSize = threadPoolSize;
-            if (adminPassword == "")
-            {
-                adminPassword = "todo:lookupenv";
-            }
             this.adminPassword = adminPassword;
         }
 
         public void Start()
         {
-            server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
+            server = new TcpListener(IPAddress.Parse(localAddress), port);
             server.Start();
-            Console.WriteLine("Server has started on 127.0.0.1:{0}.{1}Waiting for a connection...", port, Environment.NewLine);
+            Console.WriteLine("Server has started on {2}:{0}.{1}Waiting for a connection...", port, Environment.NewLine, localAddress);
             ThreadManagementLoop();
             throw new NotImplementedException();
         }
 
         public void ThreadManagementLoop()
         {
-            ChannelBridge channelBridge = new ChannelBridge();
+            ChannelBridge channelBridge = new ChannelBridge(adminPassword);
             while (true)
             {
                 if (threads.Count < threadPoolSize)
@@ -65,6 +63,28 @@ namespace WebsocketEdu
                     node = node.Next;
                 }
             }
+        }
+
+        internal static string GenerateRandomPassword()
+        {
+            int tokenLength = 10;
+
+            char[] charSet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&()".ToCharArray();
+            int byteSize = 256; //Labelling convenience
+            int biasZone = byteSize - (byteSize % charSet.Length);
+
+            byte[] rBytes = new byte[tokenLength]; //Do as much before and after lock as possible
+            char[] rName = new char[tokenLength];
+
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+            rng.GetBytes(rBytes);
+            for (var i = 0; i < tokenLength; i++)
+            {
+                rName[i] = charSet[rBytes[i] % charSet.Length];
+            }
+
+            return new string(rName);
+            //return "password";
         }
     }
 }

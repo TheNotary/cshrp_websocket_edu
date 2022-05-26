@@ -4,12 +4,12 @@ namespace WebsocketEdu
 {
     public class ChannelBridge
     {
-        //private List<IObserver<string>> observers;
         private Dictionary<string, List<IObserver<string>>> channels;
+        public string adminPassword;
 
-        public ChannelBridge()
+        public ChannelBridge(string adminPassword)
         {
-            //this.observers = new List<IObserver<string>>();
+            this.adminPassword = adminPassword;
             this.channels = new Dictionary<string, List<IObserver<string>>>();
         }
 

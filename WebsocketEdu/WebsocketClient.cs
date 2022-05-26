@@ -18,16 +18,7 @@ namespace WebsocketEdu
 
         public INetworkStream Stream => _stream;
 
-        public WebsocketClient(INetworkStream stream, byte[] headerBytes)
-        {
-            _stream = stream;
-            _headerBytes = headerBytes;
-            channelBridge = new ChannelBridge();
-            frame.fin = (headerBytes[0] & 0b10000000) != 0;
-            frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
-            frame.opcode = headerBytes[0] & 0b00001111;
-            AdminAuthenticated = false;
-        }
+        internal WebsocketClient(INetworkStream stream, byte[] headerBytes) : this(stream, headerBytes, new ChannelBridge("testPass")) { }
 
         public WebsocketClient(INetworkStream stream, byte[] headerBytes, ChannelBridge cb)
         {

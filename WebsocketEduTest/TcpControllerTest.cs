@@ -53,7 +53,7 @@ namespace WebsocketEduTest
         {
             // given
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validHttpUpgradeRequest);
-            ChannelBridge c = new ChannelBridge();
+            ChannelBridge c = new ChannelBridge("");
 
             // when
             var t = new Thread(() => {

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 
 namespace WebsocketEdu
@@ -7,19 +6,11 @@ namespace WebsocketEdu
     public class CommandRouter
     {
         WebsocketClient _websocketClient;
-        IConfigurationRoot configuration;
 
 
         public CommandRouter(WebsocketClient websocketClient)
         {
             _websocketClient = websocketClient;
-            configuration = new ConfigurationBuilder().AddUserSecrets<WebsocketEduApp>().Build();
-        }
-
-        public CommandRouter(WebsocketClient websocketClient, IConfigurationRoot config)
-        {
-            _websocketClient = websocketClient;
-            configuration = config;
         }
 
         public string HandleWebsocketMessage(WebsocketFrame websocketFrame)
@@ -88,7 +79,7 @@ namespace WebsocketEdu
         private void AuthenticateClient(string msg)
         {
             string cleanMsg = Regex.Replace(msg, "^/auth", "").Trim();
-            string adminPassword = configuration["adminPassword"];
+            string adminPassword = _websocketClient.channelBridge.adminPassword;
 
             if (adminPassword == cleanMsg)
             { 

@@ -51,18 +51,22 @@ namespace WebsocketEdu
             switch (command)
             {
                 case ("/close"):
+                case ("/c"):
                     if (_websocketClient.AdminAuthenticated)
                         CloseServer();
                     else
                         Console.WriteLine("Not admin, close server request denied");
                     break;
                 case ("/auth"):
+                case ("/a"):
                     AuthenticateClient(msg);
                     break;
                 case ("/subscribe"):
+                case ("/s"):
                     SubscribeToChannel(msg);
                     break;
                 case ("/publish"):
+                case ("/p"):
                     PublishToChannel(msg);
                     break;
                 default:
@@ -78,7 +82,7 @@ namespace WebsocketEdu
         /// <exception cref="NotImplementedException"></exception>
         private void AuthenticateClient(string msg)
         {
-            string cleanMsg = Regex.Replace(msg, "^/auth", "").Trim();
+            string cleanMsg = StripCommand(msg);
             string adminPassword = _websocketClient.channelBridge.adminPassword;
 
             if (adminPassword == cleanMsg)
@@ -92,6 +96,7 @@ namespace WebsocketEdu
             Console.WriteLine("Authentication failure, wrong password");
         }
 
+
         private void CloseServer()
         {
             Console.WriteLine("Client sent close command, closing.");
@@ -99,25 +104,29 @@ namespace WebsocketEdu
             //Environment.Exit(0);
         }
 
-        private void SubscribeToChannel(string command)
+        private void SubscribeToChannel(string msg)
         {
-            string cleanMsg = Regex.Replace(command, "^/subscribe", "").Trim();
+            string cleanMsg = StripCommand(msg);
             string channelName = cleanMsg;
 
             _websocketClient.Subscribe(_websocketClient.channelBridge, channelName);
         }
 
-        private void PublishToChannel(string command)
+        private void PublishToChannel(string msg)
         {
             // split message into parameters
-            string cleanParameters = Regex.Replace(command, "^/publish", "").Trim();
-            string channelName = cleanParameters.Split(" ")[0];
-            string content = Regex.Replace(cleanParameters, $"^{channelName}", "").Trim();
+            string cleanMsg = StripCommand(msg);
+            string channelName = cleanMsg.Split(" ")[0];
+            string content = Regex.Replace(cleanMsg, $"^{channelName}", "").Trim();
 
             // send message to all client subscribing to that message
             _websocketClient.channelBridge.PublishContent(channelName, content);
         }
+        private string StripCommand(string msg)
+        {
+            string cmdName = msg.Split(" ")[0].Replace("/", "");
+            return Regex.Replace(msg, $"^/{cmdName}", "").Trim();
+        }
 
-        
     }
 }

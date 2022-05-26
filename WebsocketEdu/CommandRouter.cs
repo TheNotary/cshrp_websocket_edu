@@ -17,7 +17,7 @@ namespace WebsocketEdu
         {
             INetworkStream stream = _websocketClient.Stream;
 
-            if (!websocketFrame.isMasked)
+            if (!websocketFrame.isMasked && websocketFrame.payloadLength != 0)
                 throw new NotSupportedException("mask bit not set.  Masks MUST be set by the client when sending messages to prevent cache poisoning attacks leveraged against internet infrastructure like proxies and cyber warfar appliances.");
 
             switch (websocketFrame.opcode)
@@ -95,7 +95,8 @@ namespace WebsocketEdu
         private void CloseServer()
         {
             Console.WriteLine("Client sent close command, closing.");
-            Environment.Exit(0);
+            _websocketClient.channelBridge.ManagementCancelationToken.Cancel();
+            //Environment.Exit(0);
         }
 
         private void SubscribeToChannel(string command)

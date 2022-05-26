@@ -19,17 +19,14 @@ namespace WebsocketEduTest
         public WebsocketClient CreateWebsocketClient(byte[] streamBytes)
         {
             MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(streamBytes);
-            byte[] headerBytes = new byte[2];
-            networkStreamProxy.Read(headerBytes, 0, headerBytes.Length);
-            WebsocketClient websocketClient = new WebsocketClient(networkStreamProxy, headerBytes);
+            WebsocketClient websocketClient = new WebsocketClient(networkStreamProxy);
             return websocketClient;
         }
 
         public WebsocketClient CreateWebsocketClient()
         {
-            byte[] headerBytes = Encoding.UTF8.GetBytes("GE");
-            MockNetworkStreamProxy nsp = new MockNetworkStreamProxy("T /blah");
-            WebsocketClient websocketClient = new WebsocketClient(nsp, headerBytes);
+            MockNetworkStreamProxy nsp = new MockNetworkStreamProxy("GET /blah");
+            WebsocketClient websocketClient = new WebsocketClient(nsp);
             return websocketClient;
         }
     }

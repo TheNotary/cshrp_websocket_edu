@@ -17,9 +17,11 @@ namespace WebsocketEduTest
         {
             // given
             WebsocketClient websocketClient = CreateWebsocketClient(validWebsocketHello);
+            byte[] headerBytes = new byte[2];
+            websocketClient.Stream.Read(headerBytes, 0, headerBytes.Length);
 
             // when
-            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream();
+            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream(headerBytes);
 
             // then
             frame.opcode.Should().Be(0x01);
@@ -35,9 +37,11 @@ namespace WebsocketEduTest
         {
             // given
             WebsocketClient websocketClient = CreateWebsocketClient(validClientClose);
+            byte[] headerBytes = new byte[2];
+            websocketClient.Stream.Read(headerBytes, 0, headerBytes.Length);
 
             // when
-            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream();
+            WebsocketFrame frame = websocketClient.ConsumeFrameFromStream(headerBytes);
 
             // then
             frame.closeCode.Should().Be(1001);
@@ -81,5 +85,6 @@ namespace WebsocketEduTest
             websocketClient2.Stream.GetWritesAsString().Humanize()
                 .Should().Be(contentToPublish);
         }
+
     }
 }

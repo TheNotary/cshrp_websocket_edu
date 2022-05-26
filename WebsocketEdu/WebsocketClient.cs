@@ -8,7 +8,6 @@ namespace WebsocketEdu
     public class WebsocketClient : ChannelSubscriber
     {
         INetworkStream _stream;
-        byte[] _headerBytes;
         WebsocketFrame frame;
 
         // Bayeux Bridge
@@ -18,57 +17,32 @@ namespace WebsocketEdu
 
         public INetworkStream Stream => _stream;
 
-        internal WebsocketClient(INetworkStream stream, byte[] headerBytes) : this(stream, headerBytes, new ChannelBridge("testPass")) { }
+        internal WebsocketClient(INetworkStream stream) : this(stream, new ChannelBridge("testPass")) { }
 
-        public WebsocketClient(INetworkStream stream, byte[] headerBytes, ChannelBridge cb)
+        public WebsocketClient(INetworkStream stream, ChannelBridge cb)
         {
             _stream = stream;
-            _headerBytes = headerBytes;
             channelBridge = cb;
-            frame.fin = (headerBytes[0] & 0b10000000) != 0;
-            frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
-            frame.opcode = headerBytes[0] & 0b00001111;
             AdminAuthenticated = false;
         }
 
-        public ulong determineMessageLength()
-        {
-            int msglen = _headerBytes[1] & 0b01111111;
-            ulong msglen64 = (ulong)msglen;
-
-            if (msglen == 126) // 126 signifies an extended payload size of 16bits
-            {
-                byte[] balanceBytes = new byte[2];
-                _stream.Read(balanceBytes, 0, balanceBytes.Length);
-
-                msglen64 = BitConverter.ToUInt16(balanceBytes.Reverse().ToArray());
-            }
-            if (msglen == 127)
-            {
-                byte[] balanceBytes = new byte[8];
-                _stream.Read(balanceBytes, 0, balanceBytes.Length);
-
-                msglen64 = BitConverter.ToUInt64(balanceBytes.Reverse().ToArray());
-            }
-
-            Console.WriteLine("Payload length was: " + msglen64.ToString());
-
-            return msglen64;
-        }
-
         /// <summary>
-        /// This method will consume the next frame from the stream depending on the headerBytes and the
-        ///  length of the websocket frame as determined by parsing the payload
+        /// This method will consume the next frame from the stream depending on the length of the payload as 
+        /// indicated by headerBytes
         /// </summary>
-        public WebsocketFrame ConsumeFrameFromStream()
+        public WebsocketFrame ConsumeFrameFromStream(byte[] headerBytes)
         {
-            frame.payloadLength = determineMessageLength();
+            frame.fin = (headerBytes[0] & 0b10000000) != 0;
+            frame.isMasked = (headerBytes[1] & 0b10000000) != 0;
+            frame.opcode = headerBytes[0] & 0b00001111;
+
+            frame.payloadLength = determineMessageLength(headerBytes);
             frame.mask = consumeMask();
 
             if (frame.payloadLength == 0)
                 Console.WriteLine("payloadLength == 0");
 
-            if (frame.isMasked)
+            if (frame.isMasked || frame.payloadLength == 0)
             {
                 frame.cleartextPayload = decodeMessage().ToArray();
 
@@ -95,6 +69,30 @@ namespace WebsocketEdu
                 return frame;
             }
 
+        }
+
+        public ulong determineMessageLength(byte[] headerBytes)
+        {
+            int msglen = headerBytes[1] & 0b01111111;
+            ulong msglen64 = (ulong)msglen;
+
+            if (msglen == 126) // 126 signifies an extended payload size of 16bits
+            {
+                byte[] balanceBytes = new byte[2];
+                _stream.Read(balanceBytes, 0, balanceBytes.Length);
+
+                msglen64 = BitConverter.ToUInt16(balanceBytes.Reverse().ToArray());
+            }
+            if (msglen == 127)
+            {
+                byte[] balanceBytes = new byte[8];
+                _stream.Read(balanceBytes, 0, balanceBytes.Length);
+
+                msglen64 = BitConverter.ToUInt64(balanceBytes.Reverse().ToArray());
+            }
+
+            Console.WriteLine("Payload length was: " + msglen64.ToString());
+            return msglen64;
         }
 
         public MemoryStream decodeMessage()
@@ -142,11 +140,16 @@ namespace WebsocketEdu
 
         public void SendMessage(string msg)
         {
+            SendMessage(msg, false);
+        }
+
+        public void SendMessage(string msg, bool isMasked)
+        {
             byte[] payload = Encoding.UTF8.GetBytes(msg);
             WebsocketFrame sendFrame = new WebsocketFrame();
             sendFrame.fin = true;
             sendFrame.opcode = 0x01;
-            sendFrame.isMasked = false;
+            sendFrame.isMasked = isMasked;
             sendFrame.payloadLength = (ulong) payload.Length;
             sendFrame.cleartextPayload = payload;
 

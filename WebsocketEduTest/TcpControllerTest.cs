@@ -52,14 +52,15 @@ namespace WebsocketEduTest
         public void ItHandlesHandshakesMessagesAndClosesCorrectly()
         {
             // given
-            MockNetworkStreamProxy networkStreamProxy = new MockNetworkStreamProxy(validHttpUpgradeRequest);
+            WebsocketClient websocketClient = CreateWebsocketClient(Encoding.UTF8.GetBytes(validHttpUpgradeRequest));
+            MockNetworkStreamProxy networkStreamProxy = (MockNetworkStreamProxy)websocketClient.Stream;
             ChannelBridge c = new ChannelBridge("");
 
             // when
             var t = new Thread(() => {
-                TcpController.HandleClientMessage(networkStreamProxy, c);
-                TcpController.HandleClientMessage(networkStreamProxy, c);
-                Assert.Throws<ClientClosedConnectionException>(() => TcpController.HandleClientMessage(networkStreamProxy, c));
+                TcpController.HandleClientMessage(websocketClient, c);
+                TcpController.HandleClientMessage(websocketClient, c);
+                Assert.Throws<ClientClosedConnectionException>(() => TcpController.HandleClientMessage(websocketClient, c));
             }); t.Start();
             networkStreamProxy.PutBytes(validWebsocketHello);
             networkStreamProxy.PutBytes(validClientClose);

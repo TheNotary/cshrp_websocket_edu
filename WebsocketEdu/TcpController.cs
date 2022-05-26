@@ -15,11 +15,11 @@ namespace WebsocketEdu
 
             TcpClient tcpClient = ((TcpListener)parameterz[0]).AcceptTcpClient();
             ChannelBridge channelBridge = (ChannelBridge) parameterz[1]; 
+            INetworkStream networkStream = new NetworkStreamProxy(tcpClient.GetStream());
+            WebsocketClient websocketClient = new WebsocketClient(networkStream, channelBridge);
 
             string remoteIp = GetRemoteIp(tcpClient);
-
             Console.WriteLine("A client connected from {0}", remoteIp);
-            INetworkStream networkStream = new NetworkStreamProxy(tcpClient.GetStream());
 
             while (!tcpClient.Connected) ;
             while (tcpClient.Connected)
@@ -35,7 +35,7 @@ namespace WebsocketEdu
 
                 try
                 {
-                    msg = HandleClientMessage(networkStream, channelBridge);
+                    msg = HandleClientMessage(websocketClient, channelBridge);
                 }
                 catch (ClientClosedConnectionException ex)
                 {
@@ -61,16 +61,16 @@ namespace WebsocketEdu
             }
         }
 
-        public static string HandleClientMessage(INetworkStream networkStream, ChannelBridge channelBridge)
+        public static string HandleClientMessage(WebsocketClient websocketClient, ChannelBridge channelBridge)
         {
+            INetworkStream networkStream = websocketClient.Stream;
             // Get the client's data now that they've at least gotten to the "GE" part of the HTTP upgrade request or the frame header.
             Byte[] headerBytes = new Byte[2];
             networkStream.Read(headerBytes, 0, headerBytes.Length);
             if (HandleHandshake(networkStream, headerBytes)) return "";
 
             // Handle ordinary websocket communication
-            WebsocketClient websocketClient = new WebsocketClient(networkStream, headerBytes, channelBridge);
-            WebsocketFrame websocketFrame = websocketClient.ConsumeFrameFromStream();
+            WebsocketFrame websocketFrame = websocketClient.ConsumeFrameFromStream(headerBytes);
             CommandRouter commandRouter = new CommandRouter(websocketClient);
             return commandRouter.HandleWebsocketMessage(websocketFrame);
         }
@@ -93,8 +93,16 @@ namespace WebsocketEdu
         {
             MemoryStream output = new MemoryStream();
             output.WriteByte(0b10001000); // opcode for a finished, closed frame
-            output.WriteByte(0x02);       // length of close payload being 2, this message isn't masked, they say there's no vulnerability to the server...
+            output.WriteByte(0x02);       // FIXME: this is a bug, assumed closeCodeBytes is size 2 and no masking of frame... length of close payload being 2, this message isn't masked, they say there's no vulnerability to the server...
             output.Write(closeCodeBytes, 0, closeCodeBytes.Length);
+            return output.ToArray();
+        }
+
+        public static byte[] BuildCloseFrameClient()
+        {
+            MemoryStream output = new MemoryStream();
+            output.WriteByte(0b10001000); // opcode for a finished, closed frame
+            output.WriteByte(0x00);
             return output.ToArray();
         }
 

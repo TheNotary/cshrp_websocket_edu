@@ -10,7 +10,7 @@ namespace WebsocketEdu
         private string localAddress;
         private int port;
         private int threadPoolSize;
-        private string adminPassword;
+        public string adminPassword;
         private TcpListener? server;
         private LinkedList<Thread> threads = new LinkedList<Thread>();
 
@@ -29,20 +29,25 @@ namespace WebsocketEdu
             server = new TcpListener(IPAddress.Parse(localAddress), port);
             server.Start();
             Console.WriteLine("Server has started on {2}:{0}.{1}Waiting for a connection...", port, Environment.NewLine, localAddress);
+
             ThreadManagementLoop();
-            throw new NotImplementedException();
         }
 
         public void ThreadManagementLoop()
         {
             ChannelBridge channelBridge = new ChannelBridge(adminPassword);
-            while (true)
+            CancellationTokenSource managementCts = new CancellationTokenSource();
+            channelBridge.ManagementCancelationToken = managementCts;
+            var token = managementCts.Token;
+
+            while (!token.IsCancellationRequested)
             {
                 if (threads.Count < threadPoolSize)
                 {
                     //GC.Collect(); // For testing memory leaks
                     Thread t = new Thread(new ParameterizedThreadStart(TcpController.HandleNewClientConnectionInThread));
                     if (server == null) throw new Exception("Server was null which isn't possible");
+
                     object[] threadParams = new object[] { server, channelBridge };
                     t.Start(threadParams);
                     threads.AddLast(t);
@@ -65,7 +70,7 @@ namespace WebsocketEdu
             }
         }
 
-        internal static string GenerateRandomPassword()
+        public static string GenerateRandomPassword()
         {
             int tokenLength = 10;
 
@@ -84,7 +89,6 @@ namespace WebsocketEdu
             }
 
             return new string(rName);
-            //return "password";
         }
     }
 }

@@ -6,11 +6,14 @@ namespace WebsocketEdu
     {
         private Dictionary<string, List<IObserver<string>>> channels;
         public string adminPassword;
+        public Thread managementThread;
+        public CancellationTokenSource ManagementCancelationToken;
 
         public ChannelBridge(string adminPassword)
         {
             this.adminPassword = adminPassword;
             this.channels = new Dictionary<string, List<IObserver<string>>>();
+            managementThread = Thread.CurrentThread;
         }
 
         public IDisposable Subscribe(ChannelSubscriber channelSubscriber, string channel)

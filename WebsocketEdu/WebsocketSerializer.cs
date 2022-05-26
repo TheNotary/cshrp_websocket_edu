@@ -34,7 +34,7 @@ namespace WebsocketEdu
 
             if (frame.isMasked)
             {
-                frame.mask = frame.mask.Length == 4 ? frame.mask : GenerateMaskingKey();
+                frame.mask = frame.mask == null ? GenerateMaskingKey() : frame.mask;
                 memoryStream.Write(frame.mask, 0, frame.mask.Length);
             }
 
